@@ -1,0 +1,34 @@
+.main-header {
+  background-color: blue; /* Changed background to blue */
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-header div {
+  display: flex;
+  align-items: center;
+}
+
+.main-header h1 {
+  margin-left: 1rem;
+  font-size: 2rem;
+}
+
+.main-header nav a {
+  color: white;
+  text-decoration: none;
+  margin-left: 1rem;
+  font-weight: 500;
+}
+
+.main-header nav a:hover {
+  text-decoration: underline;
+}
+
+.main-header nav a.active {
+  font-weight: bold;
+  border-bottom: 2px solid white;
+}
