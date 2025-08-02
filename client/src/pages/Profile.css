@@ -1,0 +1,76 @@
+/* Profile.css */
+.profile-container {
+  text-align: center;
+  padding: 50px;
+  background-color: #f4f4f4;
+  min-height: 100vh;
+}
+
+.profile-heading {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.profile-email {
+  font-size: 16px;
+  margin-bottom: 30px;
+  color: #555;
+}
+
+.profile-image-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.profile-image {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #007bff;
+}
+
+.custom-file-upload {
+  display: inline-block;
+  padding: 10px 20px;
+  margin-top: 10px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.custom-file-upload:hover {
+  background-color: #0056b3;
+}
+
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
+.upload-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 8px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.upload-button:hover {
+  background-color: #1e7e34;
+}
+
+.not-logged-in {
+  color: red;
+  font-weight: bold;
+  margin-top: 100px;
+}
