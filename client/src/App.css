@@ -1,0 +1,56 @@
+/* Set Google Font if needed */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+/* Reset default spacing and box model */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Apply global font and background */
+/* App.css */
+
+body {
+  background-color: #9cc4ec; /* Change this to your desired background color */
+  font-family: 'Poppins', sans-serif;
+  color: #fbfdfe;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+
+/* Links */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover {
+  text-decoration: none;
+  color: #007bff;
+}
+
+/* Utility container spacing */
+.container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+/* Navbar override */
+.navbar {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: #d2d2e2;
+}

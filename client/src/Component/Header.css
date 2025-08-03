@@ -1,34 +1,31 @@
-.main-header {
-  background-color: blue; /* Changed background to blue */
-  color: white;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Set dark background color */
+.navbar {
+  background-color: #1e1e3f !important;  /* You can change to any color you want */
+  padding: 1rem 2rem;
 }
 
-.main-header div {
-  display: flex;
-  align-items: center;
+/* Make all text white */
+.navbar .navbar-brand,
+.navbar .nav-link,
+.navbar-toggler {
+  color: white !important;
 }
 
-.main-header h1 {
-  margin-left: 1rem;
-  font-size: 2rem;
+/* Logo text styling */
+.navbar-brand span {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white !important;
 }
 
-.main-header nav a {
-  color: white;
-  text-decoration: none;
-  margin-left: 1rem;
-  font-weight: 500;
+/* Hover effect */
+.navbar .nav-link:hover {
+  color: #cccccc !important;
 }
 
-.main-header nav a:hover {
-  text-decoration: underline;
-}
-
-.main-header nav a.active {
+/* Active link style */
+.navbar .nav-link.active {
   font-weight: bold;
   border-bottom: 2px solid white;
+  color: white !important;
 }

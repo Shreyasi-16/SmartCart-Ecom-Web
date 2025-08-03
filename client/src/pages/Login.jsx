@@ -1,95 +1,109 @@
 import {
-    getAuth,
-    signInWithEmailAndPassword,
-    signInWithPopup,
-    GoogleAuthProvider
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 
-import app from '../firebase';
-import { useState } from 'react';
-import './Login.css';
-
-
+import app from "../firebase";
+import { useState } from "react";
+import "./Login.css";
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 export function Login() {
-    const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
 
+  const login = (e) => {
+    e.preventDefault();
+    if (!email || !pass) {
+      alert("Please enter email and password.");
+      return;
+    }
 
-    const [pass, setPass] = useState("");
-
-    const login = (e) => {
-        e.preventDefault();
-        if (!email || !pass) {
-            alert("Please enter email and password.");
-            return;
+    signInWithEmailAndPassword(auth, email, pass)
+      .then((value) => {
+        alert("Login Success");
+        window.location.href = "/Profile";
+        setEmail("");
+        setPass("");
+      })
+      .catch((error) => {
+        if (error.code === "auth/wrong-password") {
+          alert("Incorrect password.");
+        } else if (error.code === "auth/user-not-found") {
+          alert("User not found.");
+        } else {
+          alert("Login Error: " + error.message);
         }
+      });
+  };
 
-        signInWithEmailAndPassword(auth, email, pass)
-            .then((value) => {
-                alert("Login Success");
-                window.location.href="/Profile";
-                setEmail("");
-                setPass("");
-            })
-            .catch((error) => {
-                if (error.code === "auth/wrong-password") {
-                    alert("Incorrect password.");
-                } else if (error.code === "auth/user-not-found") {
-                    alert("User not found.");
-                } else {
-                    alert("Login Error: " + error.message);
-                }
-            });
-    };
+  const loginWithGoogle = (e) => {
+    e.preventDefault();
+    signInWithPopup(auth, googleProvider)
+      .then((result) => {
+        const user = result.user;
+        alert("Logged in with Google: " + user.email);
+        console.log("Google user:", user);
+        window.location.href = "/Profile";
+      })
+      .catch((error) => {
+        console.error("Google Login Error:", error);
+        alert("Google Login Error: " + error.message);
+      });
+  };
 
-    const loginWithGoogle = (e) => {
-        e.preventDefault();
-        signInWithPopup(auth, googleProvider)
-            .then((result) => {
-                const user = result.user;
-                alert("Logged in with Google: " + user.email);
-                
-                console.log("Google user:", user);
-                window.location.href="/Profile";
-            })
-            .catch((error) => {
-                console.error("Google Login Error:", error);
-                alert("Google Login Error: " + error.message);
-            });
-    };
+  return (
+    <div className="container d-flex justify-content-center align-items-center vh-100">
+      <div className="card shadow p-4" style={{ maxWidth: "400px", width: "100%" }}>
+        <h3 className="text-center text-primary mb-4">Log In</h3>
+        <form>
+          <div className="mb-3">
+            <label htmlFor="lemail" className="form-label">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="lemail"
+              className="form-control"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-    return (
-        <>
-         <div className="login-container">
-            
+          <div className="mb-3">
+            <label htmlFor="lpass" className="form-label">
+              Password
+            </label>
+            <input
+              type="password"
+              id="lpass"
+              className="form-control"
+              placeholder="Enter password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+            />
+          </div>
 
-            <form className="login-form">
-                <label htmlFor="lemail">Enter Email-ID:</label>
-                <input
-                    type="email"
-                    id="lemail"
-                    name="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+          <button type="submit" className="btn btn-primary w-100 mb-2" onClick={login}>
+            Log In
+          </button>
 
-                <label htmlFor="lpass">Enter Password:</label>
-                <input
-                    type="password"
-                    id="lpass"
-                    name="pass"
-                    value={pass}
-                    onChange={(e) => setPass(e.target.value)}
-                />
+          <button type="button" className="btn btn-primary w-100 mb-3" onClick={loginWithGoogle}>
+            Login with Google
+          </button>
 
-                <button type="button" onClick={login}>Log In</button>
-                <button type="button" onClick={loginWithGoogle}>Login with Google</button>
-                <p>Don't have an account? <a href="/signup">Sign up</a></p>
-            </form>
-            </div>
-        </>
-    );
+          <div className="text-center">
+            <p>
+              Don't have an account? <a href="/signup">Sign up</a>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
