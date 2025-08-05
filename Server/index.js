@@ -1,4 +1,4 @@
-//MONGO
+// MONGO + Firebase Auth
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -34,32 +34,37 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Define Mongoose schema
+// Mongoose schema and model
 const Product = mongoose.model('Product', new mongoose.Schema({
   name: String,
   price: Number,
   userId: String,
-}));
+}, { collection: 'products' })); // optional: specify collection name
 
-// Protected route to add product
-app.post('/api/products', authenticate, async (req, res) => {
+// 🔄 POST route to add a product
+app.post('/products', /*authenticate,*/ async (req, res) => {
   const { name, price } = req.body;
-  const product = new Product({
-    name,
-    price,
-    userId: req.user.uid,
-  });
 
+  // Use dummy user ID if auth is disabled
+  const userId = req.user?.uid || 'test-user';
+
+  const product = new Product({ name, price, userId });
   await product.save();
-  res.send('Product saved successfully');
+  res.send('✅ Product saved successfully');
 });
 
-// Connect to MongoDB
+// 🆕 GET route to list all products (for testing)
+app.get('/products', async (req, res) => {
+  const products = await Product.find();
+  res.json(products);
+});
+
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('MongoDB Connected');
+    console.log('✅ MongoDB Connected');
     app.listen(process.env.PORT, () =>
-      console.log(`Server running on http://localhost:${process.env.PORT}`)
+      console.log(`🚀 Server running on http://localhost:${process.env.PORT}`)
     );
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => console.error('❌ MongoDB connection error:', err));
