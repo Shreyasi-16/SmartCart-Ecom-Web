@@ -1,17 +1,18 @@
-// MONGO + Firebase Auth
-
+// Required modules
+//MONGO 
 const express = require('express');
 const mongoose = require('mongoose');
 const admin = require('firebase-admin');
 const cors = require('cors');
 require('dotenv').config();
 
+// App setup
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Firebase Admin SDK
-const serviceAccount = require('./firebase-service-account.json'); // downloaded from Firebase console
+// Firebase Admin SDK setup
+const serviceAccount = require('./firebase-service-account.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -27,39 +28,50 @@ const authenticate = async (req, res, next) => {
   try {
     const token = authHeader.split(' ')[1];
     const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded; // UID available here
+    req.user = decoded;
     next();
   } catch (err) {
     res.status(401).send('Unauthorized');
   }
 };
 
-// Mongoose schema and model
+// MongoDB Product Schema & Model
 const Product = mongoose.model('Product', new mongoose.Schema({
   name: String,
   price: Number,
   userId: String,
-}, { collection: 'products' })); // optional: specify collection name
+}, { collection: 'products' }));
 
-// 🔄 POST route to add a product
-app.post('/products', /*authenticate,*/ async (req, res) => {
-  const { name, price } = req.body;
+// ✅ Controller Method: Add Product
+const addProduct = async (req, res) => {
+  try {
+    const { name, price } = req.body;
+    const userId = req.user?.uid || 'test-user'; // If auth is disabled
 
-  // Use dummy user ID if auth is disabled
-  const userId = req.user?.uid || 'test-user';
+    const product = new Product({ name, price, userId });
+    await product.save();
 
-  const product = new Product({ name, price, userId });
-  await product.save();
-  res.send('✅ Product saved successfully');
-});
+    res.send('✅ Product saved successfully');
+  } catch (error) {
+    res.status(500).send('❌ Error saving product');
+  }
+};
 
-// 🆕 GET route to list all products (for testing)
-app.get('/products', async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
-});
+// ✅ Controller Method: Get Products
+const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (error) {
+    res.status(500).send('❌ Error retrieving products');
+  }
+};
 
-// MongoDB Connection
+// 🔄 Routes using methods
+app.post('/products', /* authenticate, */ addProduct);
+app.get('/products', getProducts);
+
+// MongoDB connection and server start
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
