@@ -1,5 +1,4 @@
 // Required modules
-//MONGO 
 const express = require('express');
 const mongoose = require('mongoose');
 const admin = require('firebase-admin');
@@ -18,7 +17,17 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// Token verification middleware
+// MongoDB User Schema & Model
+const User = mongoose.model('User', new mongoose.Schema({
+  uid: String,
+  name: String,
+  email: String,
+  phone: String,
+  photoURL: String,
+  joinedAt: { type: Date, default: Date.now },
+}, { collection: 'users' }));
+
+// 🔐 Middleware: Verify Firebase ID Token
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -31,52 +40,49 @@ const authenticate = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    console.error('Token verification failed:', err);
     res.status(401).send('Unauthorized');
   }
 };
 
-// MongoDB Product Schema & Model
-const Product = mongoose.model('Product', new mongoose.Schema({
-  name: String,
-  price: Number,
-  userId: String,
-}, { collection: 'products' }));
-
-// ✅ Controller Method: Add Product
-const addProduct = async (req, res) => {
+// 🔄 Controller: Sync Firebase User → MongoDB
+const syncUser = async (req, res) => {
   try {
-    const { name, price } = req.body;
-    const userId = req.user?.uid || 'test-user'; // If auth is disabled
+    const { uid } = req.user;
 
-    const product = new Product({ name, price, userId });
-    await product.save();
+    // Fetch full Firebase user profile
+    const firebaseUser = await admin.auth().getUser(uid);
 
-    res.send('✅ Product saved successfully');
+    const userData = {
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || '',
+      email: firebaseUser.email || '',
+      phone: firebaseUser.phoneNumber || '',
+      photoURL: firebaseUser.photoURL || '',
+    };
+
+    const user = await User.findOneAndUpdate(
+      { uid },
+      { $set: userData },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ message: '✅ User synced', user });
   } catch (error) {
-    res.status(500).send('❌ Error saving product');
+    console.error('User sync error:', error);
+    res.status(500).send('❌ Failed to sync user');
   }
 };
 
-// ✅ Controller Method: Get Products
-const getProducts = async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (error) {
-    res.status(500).send('❌ Error retrieving products');
-  }
-};
+// 🔗 Route
+app.post('/sync-user', authenticate, syncUser);
 
-// 🔄 Routes using methods
-app.post('/products', /* authenticate, */ addProduct);
-app.get('/products', getProducts);
-
-// MongoDB connection and server start
+// 🌐 Connect to MongoDB and start server
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
     app.listen(process.env.PORT, () =>
-      console.log(`🚀 Server running on http://localhost:${process.env.PORT}`)
+      console.log(`🚀 Server running at http://localhost:${process.env.PORT}`)
     );
   })
   .catch(err => console.error('❌ MongoDB connection error:', err));

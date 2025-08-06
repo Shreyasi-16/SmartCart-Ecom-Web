@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, updateProfile, signOut } from 'firebase/auth';
 import './Profile.css';
 
 const Profile = () => {
@@ -42,6 +42,18 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      alert('Logged out successfully!');
+      setUser(null); // optional
+      window.location.href = '/login'; // redirect to login page
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Failed to log out.');
+    }
+  };
+
   return (
     <div className="profile-container">
       {user ? (
@@ -67,6 +79,9 @@ const Profile = () => {
           </label>
 
           <button className="upload-button" onClick={handleUpload}>Save Photo</button>
+
+          {/* 👇 Logout Button */}
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
         </>
       ) : (
         <p className="not-logged-in">You are not logged in.</p>
