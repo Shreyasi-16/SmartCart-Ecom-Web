@@ -12,7 +12,13 @@ export function Header() {
           {/* Navbar */}
           <nav className="navbar navbar-expand-lg navbar-dark px-5">
             <NavLink className="navbar-brand d-flex align-items-center" to="/">
-              <img src="/logo.png" alt="logo" height="70" width="70" className="me-2" />
+              <img
+                src="/logo.png"
+                alt="logo"
+                height="70"
+                width="70"
+                className="me-2 rounded-circle"
+              />
               <span className="brand-text">SmartCart</span>
             </NavLink>
 

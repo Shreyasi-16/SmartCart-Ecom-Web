@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+AU+QLD&display=swap');
+
+
 /* Background image */
 .header-bg {
   position: relative;
@@ -33,21 +36,23 @@
 
 /* Brand text inside navbar */
 .brand-text {
-  color: #0d47a1; /* dark blue */
+  color: #123262; /* dark blue */
   font-weight: bold;
-  font-size: 1.4rem;
+  font-size: 2rem;
+  font-family: "Playwrite AU QLD", cursive;
 }
+
 
 /* Navbar links */
 .nav-link {
-  color: #0d47a1 !important; /* dark blue */
+  color: #123262 !important; /* dark blue */
   font-weight: 500;
   margin-left: 10px;
   transition: color 0.2s ease-in-out, border-bottom 0.2s ease-in-out;
 }
 
 .nav-link.active {
-  border-bottom: 2px solid #0d47a1;
+  border-bottom: 2px solid #123262;
 }
 
 .nav-link:hover {
