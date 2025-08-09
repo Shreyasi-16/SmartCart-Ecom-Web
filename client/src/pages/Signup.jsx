@@ -1,16 +1,36 @@
+import React, { useState } from "react";
 import {
   getAuth,
   createUserWithEmailAndPassword,
+  updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
-  updateProfile,
 } from "firebase/auth";
 import app from "../firebase";
-import { useState } from "react";
 import "./Signup.css";
 
-const googleProvider = new GoogleAuthProvider();
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+const syncUserToMongo = async (user) => {
+  try {
+    const idToken = await user.getIdToken();
+
+    const response = await fetch("http://localhost:5000/sync-user", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to sync user");
+
+    console.log("✅ User synced to MongoDB");
+  } catch (error) {
+    console.error("❌ Sync Error:", error.message);
+  }
+};
 
 export function Signup() {
   const [fullName, setFullName] = useState("");
@@ -18,7 +38,7 @@ export function Signup() {
   const [pass, setPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
-  const createSignUP = (e) => {
+  const handleEmailSignup = async (e) => {
     e.preventDefault();
 
     if (!fullName || !email || !pass || !confirmPass) {
@@ -31,124 +51,89 @@ export function Signup() {
       return;
     }
 
-    createUserWithEmailAndPassword(auth, email, pass)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        return updateProfile(user, {
-          displayName: fullName,
-        });
-      })
-      .then(() => {
-        alert("Signup successful!");
-        setFullName("");
-        setEmail("");
-        setPass("");
-        setConfirmPass("");
-      })
-      .catch((error) => {
-        if (error.code === "auth/email-already-in-use") {
-          alert("This email is already registered.");
-        } else if (error.code === "auth/weak-password") {
-          alert("Password should be at least 6 characters.");
-        } else if (error.code === "auth/invalid-email") {
-          alert("Please enter a valid email address.");
-        } else {
-          alert("Signup Error: " + error.message);
-        }
-      });
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: fullName });
+
+      await syncUserToMongo(user);
+
+      alert("Signup successful!");
+      window.location.href = "/login";
+    } catch (error) {
+      if (error.code === "auth/email-already-in-use") {
+        alert("This email is already registered.");
+      } else if (error.code === "auth/weak-password") {
+        alert("Password should be at least 6 characters.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("Please enter a valid email address.");
+      } else {
+        alert("Signup Error: " + error.message);
+      }
+    }
   };
 
-  const signupWithGoogle = (e) => {
+  const handleGoogleSignup = async (e) => {
     e.preventDefault();
-    signInWithPopup(auth, googleProvider)
-      .then((result) => {
-        const user = result.user;
-        alert("Signed up with Google: " + user.email);
-        window.location.href = "/Profile";
-      })
-      .catch((error) => {
-        console.error("Google Signup Error:", error);
-        alert("Google Signup Error: " + error.message);
-      });
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      await syncUserToMongo(user);
+
+      alert("Signed up with Google: " + user.email);
+      window.location.href = "/Profile";
+    } catch (error) {
+      alert("Google Signup Error: " + error.message);
+      console.error(error);
+    }
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card shadow p-4" style={{ maxWidth: "500px", width: "100%" }}>
-        <h3 className="text-center text-primary mb-4">Create an Account</h3>
-        <form>
-          <div className="mb-3">
-            <label htmlFor="fullname" className="form-label">
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="fullname"
-              className="form-control"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="semail" className="form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="semail"
-              className="form-control"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="spass" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="spass"
-              className="form-control"
-              placeholder="Create password"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="cpass" className="form-label">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="cpass"
-              className="form-control"
-              placeholder="Re-enter password"
-              value={confirmPass}
-              onChange={(e) => setConfirmPass(e.target.value)}
-            />
-          </div>
-
-            <button type="submit" className="btn btn-primary w-100 mb-2" onClick={createSignUP}>
-            Sign Up
-            </button>
-
-            <button type="button" className="btn btn-primary w-100 mb-3" onClick={signupWithGoogle}>
-            Sign Up with Google
-            </button>
-
-
-          <div className="text-center">
-            <p>
-              Already have an account? <a href="/login">Login</a>
-            </p>
-          </div>
-        </form>
-      </div>
+    <div className="signup-container">
+      <form className="signup-form" onSubmit={handleEmailSignup}>
+        <h2>Create Account</h2>
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPass}
+          onChange={(e) => setConfirmPass(e.target.value)}
+          required
+        />
+        <button type="submit">Sign Up</button>
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          style={{ marginTop: "10px" }}
+        >
+          Sign Up with Google
+        </button>
+        <p>
+          Already have an account? <a href="/login">Login</a>
+        </p>
+      </form>
     </div>
   );
 }

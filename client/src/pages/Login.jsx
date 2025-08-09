@@ -12,29 +12,6 @@ import "./Login.css";
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// ✅ Function to sync user to MongoDB
-const syncUserToMongo = async (user) => {
-  try {
-    const idToken = await user.getIdToken();
-
-    const response = await fetch("http://localhost:5000/sync-user", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to sync user to MongoDB");
-    }
-
-    console.log("✅ User synced to MongoDB");
-  } catch (error) {
-    console.error("❌ Sync Error:", error.message);
-  }
-};
-
 export function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -47,11 +24,8 @@ export function Login() {
     }
 
     signInWithEmailAndPassword(auth, email, pass)
-      .then(async (value) => {
+      .then(() => {
         alert("Login Success");
-
-        await syncUserToMongo(value.user); // ✅ Sync after login
-
         window.location.href = "/Profile";
         setEmail("");
         setPass("");
@@ -70,12 +44,8 @@ export function Login() {
   const loginWithGoogle = (e) => {
     e.preventDefault();
     signInWithPopup(auth, googleProvider)
-      .then(async (result) => {
-        const user = result.user;
-        alert("Logged in with Google: " + user.email);
-
-        await syncUserToMongo(user); // ✅ Sync after Google login
-
+      .then((result) => {
+        alert("Logged in with Google: " + result.user.email);
         window.location.href = "/Profile";
       })
       .catch((error) => {
