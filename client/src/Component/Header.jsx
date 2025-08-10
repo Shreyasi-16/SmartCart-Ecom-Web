@@ -80,12 +80,7 @@ export function Header() {
             </div>
           </nav>
 
-          {/* Optional text below navbar */}
-          <div className="header-content">
-            <h1 className="display-4">Welcome to SmartCart</h1>
-            <p className="lead">Shop smart, live better</p>
-          </div>
-
+          
         </div>
       </div>
     </header>

@@ -1,4 +1,8 @@
+import { MainCardLayout } from "../Component/MainCardLayout";
 export function Contact()
 {
-    return <h1>Hello, Contact.</h1>
+    return <MainCardLayout>
+        <h1>Hello, Contact.</h1>
+    </MainCardLayout>
+   
 }

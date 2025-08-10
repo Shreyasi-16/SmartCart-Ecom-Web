@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { MainCardLayout } from "../Component/MainCardLayout";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -91,7 +92,8 @@ export function Signup() {
   };
 
   return (
-    <div className="signup-container">
+    <MainCardLayout>
+      <div className="signup-container">
       <form className="signup-form" onSubmit={handleEmailSignup}>
         <h2>Create Account</h2>
         <input
@@ -135,5 +137,6 @@ export function Signup() {
         </p>
       </form>
     </div>
+    </MainCardLayout>
   );
 }

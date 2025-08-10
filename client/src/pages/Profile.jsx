@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, updateProfile, signOut } from 'firebase/auth';
 import './Profile.css';
-
+import { MainCardLayout } from "../Component/MainCardLayout";
 const Profile = () => {
   const auth = getAuth();
   const [user, setUser] = useState(null);
@@ -55,7 +55,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="profile-container">
+    <MainCardLayout>
+      <div className="profile-container">
       {user ? (
         <>
           <h1 className="profile-heading">Welcome, {user.displayName || 'User'}</h1>
@@ -87,6 +88,7 @@ const Profile = () => {
         <p className="not-logged-in">You are not logged in.</p>
       )}
     </div>
+    </MainCardLayout>
   );
 };
 

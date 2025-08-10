@@ -4,7 +4,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
-
+import { MainCardLayout } from "../Component/MainCardLayout";
 import app from "../firebase";
 import { useState } from "react";
 import "./Login.css";
@@ -55,7 +55,8 @@ export function Login() {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
+    <MainCardLayout>
+      <div className="container d-flex justify-content-center align-items-center vh-100">
       <div className="card shadow p-4" style={{ maxWidth: "400px", width: "100%" }}>
         <h3 className="text-center text-primary mb-4">Log In</h3>
         <form>
@@ -103,5 +104,6 @@ export function Login() {
         </form>
       </div>
     </div>
+    </MainCardLayout>
   );
 }

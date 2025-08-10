@@ -1,4 +1,7 @@
+import { MainCardLayout } from "../Component/MainCardLayout";
 export function Cart()
 {
-    return <h1>Hello, Cart.</h1>
+    return <MainCardLayout>
+        <h1>Hello cart</h1>
+    </MainCardLayout>
 }
