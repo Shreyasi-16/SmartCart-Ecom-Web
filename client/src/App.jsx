@@ -10,6 +10,7 @@ import { Signup } from './pages/Signup.jsx';
 import { Login } from './pages/Login.jsx';
 import { Sell } from './pages/Sell.jsx';
 import Profile from './pages/Profile.jsx'; // ✅ Corrected import
+import { Wishlist } from "./pages/Wishlist"; 
 import { Applayout } from './Component/Applayout.jsx';
 import './App.css';
 
@@ -51,6 +52,7 @@ function App() {
           path: '/profile',
           element: <Profile />,
         },
+        { path: "/wishlist", element: <Wishlist /> }
       ],
     },
   ]);

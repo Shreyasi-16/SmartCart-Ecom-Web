@@ -1,8 +1,8 @@
 :root {
-  --primary: #0F0E47;
-  --accent: #505081;
-  --light: #f5f5f5;
-  --text: #ffffff;
+  --primary: #2b2b2b;
+  --accent: #5a4632;
+  --light: #f8f4e3;
+  --text: #2b2b2b;
   --danger: #dc3545;
   --success: #28a745;
 }
@@ -16,10 +16,10 @@
 html, body {
   height: 100%;
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to right, var(--primary), var(--accent));
+  background-color: var(--light);
 }
 
-/* Container for full height centering */
+/* Container for centering */
 .signup-container {
   min-height: 100vh;
   display: flex;
@@ -28,7 +28,7 @@ html, body {
   padding: 80px 20px 40px;
 }
 
-/* Signup card style */
+/* Signup card */
 .signup-form {
   background-color: var(--light);
   padding: 40px 30px;
@@ -37,6 +37,7 @@ html, body {
   width: 100%;
   max-width: 400px;
   text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Heading */
@@ -55,6 +56,7 @@ html, body {
   border: 1px solid #ccc;
   font-size: 15px;
   transition: border-color 0.3s ease;
+  background-color: #fff;
 }
 
 .signup-form input:focus {
@@ -67,7 +69,7 @@ html, body {
   width: 100%;
   padding: 12px;
   background-color: var(--accent);
-  color: var(--text);
+  color: var(--light);
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -85,7 +87,7 @@ html, body {
 .signup-form p {
   margin-top: 16px;
   font-size: 14px;
-  color: #333;
+  color: var(--primary);
 }
 
 .signup-form a {
