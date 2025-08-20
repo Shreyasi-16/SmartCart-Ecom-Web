@@ -91,7 +91,8 @@ export function Signup() {
   };
 
   return (
-    <div className="signup-container">
+   
+      <div className="signup-container">
       <form className="signup-form" onSubmit={handleEmailSignup}>
         <h2>Create Account</h2>
         <input

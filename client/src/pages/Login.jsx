@@ -1,12 +1,12 @@
+import { useState } from "react";
 import {
   getAuth,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
-
+import { useNavigate } from "react-router-dom";
 import app from "../firebase";
-import { useState } from "react";
 import "./Login.css";
 
 const auth = getAuth(app);
@@ -15,92 +15,89 @@ const googleProvider = new GoogleAuthProvider();
 export function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const login = (e) => {
+  const login = async (e) => {
     e.preventDefault();
     if (!email || !pass) {
-      alert("Please enter email and password.");
-      return;
+      return alert("Please enter email and password.");
     }
-
-    signInWithEmailAndPassword(auth, email, pass)
-      .then(() => {
-        alert("Login Success");
-        window.location.href = "/Profile";
-        setEmail("");
-        setPass("");
-      })
-      .catch((error) => {
-        if (error.code === "auth/wrong-password") {
-          alert("Incorrect password.");
-        } else if (error.code === "auth/user-not-found") {
-          alert("User not found.");
-        } else {
-          alert("Login Error: " + error.message);
-        }
-      });
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      alert("✅ Login Successful!");
+      navigate("/profile");
+    } catch (error) {
+      if (error.code === "auth/wrong-password") {
+        alert("❌ Incorrect password.");
+      } else if (error.code === "auth/user-not-found") {
+        alert("❌ User not found.");
+      } else {
+        alert("Login Error: " + error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loginWithGoogle = (e) => {
-    e.preventDefault();
-    signInWithPopup(auth, googleProvider)
-      .then((result) => {
-        alert("Logged in with Google: " + result.user.email);
-        window.location.href = "/Profile";
-      })
-      .catch((error) => {
-        console.error("Google Login Error:", error);
-        alert("Google Login Error: " + error.message);
-      });
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      alert(`✅ Logged in as ${result.user.email}`);
+      navigate("/profile");
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      alert("Google Login Error: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card shadow p-4" style={{ maxWidth: "400px", width: "100%" }}>
-        <h3 className="text-center text-primary mb-4">Log In</h3>
-        <form>
-          <div className="mb-3">
-            <label htmlFor="lemail" className="form-label">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="lemail"
-              className="form-control"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+    <div className="login-container">
+      <div className="login-card">
+        <h2 className="login-title">Welcome Back</h2>
+        <p className="login-subtitle">Log in to continue</p>
 
-          <div className="mb-3">
-            <label htmlFor="lpass" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="lpass"
-              className="form-control"
-              placeholder="Enter password"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-            />
-          </div>
+        <form onSubmit={login}>
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="login-input"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            className="login-input"
+          />
 
-          <button type="submit" className="btn btn-primary w-100 mb-2" onClick={login}>
-            Log In
+          <button
+            type="submit"
+            className="login-btn primary"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Log In"}
           </button>
 
-          <button type="button" className="btn btn-primary w-100 mb-3" onClick={loginWithGoogle}>
-            Login with Google
+          <button
+            type="button"
+            className="login-btn google"
+            onClick={loginWithGoogle}
+            disabled={loading}
+          >
+            {loading ? "Connecting..." : "Login with Google"}
           </button>
-
-          <div className="text-center">
-            <p>
-              Don't have an account? <a href="/signup">Sign up</a>
-            </p>
-          </div>
         </form>
+
+        <p className="signup-text">
+          Don’t have an account? <a href="/signup">Sign Up</a>
+        </p>
       </div>
     </div>
   );

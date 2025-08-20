@@ -1,90 +1,165 @@
-/* Background image */
-.header-bg {
-  position: relative;
-  background: url("/bgforweb.jpg") center/cover no-repeat;
-  height: 450px; /* photo height */
-  display: flex;
-  flex-direction: column;
-}
-
-/* Semi-transparent overlay */
-.header-overlay {
-  position: absolute; /* sits on top of the photo */
+/* ===== Header Section ===== */
+.header-section {
+  background-color: #211f19;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 50, 0.4); /* blue tint overlay */
-  z-index: 1;
+  right: 0;
+  z-index: 1000;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  overflow: hidden;
 }
 
-/* Navbar inside photo */
-/* Navbar inside photo */
-.navbar {
-  margin-top: 20px; /* space from top of photo */
-  background-color: rgba(255, 253, 231, 0.85); /* cream with transparency */
-  border-radius: 30px;
-  padding: 10px 20px; /* padding inside navbar */
-  max-width: 1300px; /* increased max width */
-  width: 95%; /* fills 95% of available width */
-  margin-left: auto; /* center horizontally */
-  margin-right: auto;
+/* Brand */
+.navbar-brand {
+  color: rgb(210, 199, 172) !important;
+  text-decoration: none;
+  font-weight: bolder;
+  font-size: x-large;
 }
 
-/* Brand text inside navbar */
-.brand-text {
-  color: #0d47a1; /* dark blue */
+.navbar-brand img {
+  height: 40px;
+}
+
+/* Top section inside header */
+.header-top {
+  padding: 0.5rem 1rem;
+  background-color: #211f19;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* All Categories Dropdown */
+.category-dropdown {
+  background-color: #d4c59c;
+  color: #211f19;
   font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.category-dropdown:hover {
+  background-color: #bfb694;
+}
+
+/* Search bar */
+.search-bar {
+  background: #f1f3f6;
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  display: flex;
+  align-items: center;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  width: 400px;
+}
+
+.search-bar svg {
+  color: #555;
+  cursor: pointer;
+}
+
+.search-bar input::placeholder {
+  color: #888;
+}
+
+/* Navigation icons */
+.nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-icons svg {
   font-size: 1.4rem;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.3s ease;
 }
 
-/* Navbar links */
-.nav-link {
-  color: #0d47a1 !important; /* dark blue */
-  font-weight: 500;
-  margin-left: 10px;
-  transition: color 0.2s ease-in-out, border-bottom 0.2s ease-in-out;
+.nav-icons svg:hover {
+  color: #cdca9a;
 }
 
-.nav-link.active {
-  border-bottom: 2px solid #0d47a1;
-}
-
-.nav-link:hover {
-  color: #1976d2 !important; /* brighter blue hover */
-}
-
-/* Navbar toggler (mobile view) */
-.navbar-toggler {
-  border-color: #0d47a1;
-}
-
-.navbar-toggler-icon {
-  filter: invert(18%) sepia(80%) saturate(3000%) hue-rotate(200deg) brightness(90%) contrast(95%);
-}
-
-/* Centered hero text on photo */
-.header-content {
-  position: relative;
-  top: 50%; /* center vertically */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: #fffde7; /* cream text */
-  z-index: 2;
-  animation: fadeIn 1.2s ease-in-out;
-}
-
-.header-content h1 {
+/* Profile icon */
+.profile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #c2bca6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
   font-weight: bold;
 }
 
-.header-content p {
-  font-size: 1.2rem;
+/* Wishlist badge */
+.wishlist-icon {
+  position: relative;
 }
 
-/* Fade-in animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -40%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
+.wishlist-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ff4d4f;
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+}
+
+/* Bottom nav links */
+.header-bottom {
+  background-color: #1a1814;
+}
+
+.header-bottom .nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: medium;
+}
+
+.header-bottom .nav-link:hover {
+  color: #d1c095;
+}
+
+/* Become a Seller Button */
+.become-seller-btn {
+  background-color: #d4c59c;
+  color: #211f19;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  margin-left: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.become-seller-btn:hover {
+  background-color: #bfb694;
+  transform: translateY(-2px);
+}
+
+/* Global Button Style */
+.btn {
+  background-color: #ece6d5;
+}
+
+/* Spacer so content isn't hidden under fixed header */
+.header-spacer {
+  height: 130px; /* Adjust if header height changes */
 }
