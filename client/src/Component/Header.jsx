@@ -9,6 +9,8 @@ const auth = getAuth(app);
 
 export function Header() {
   const [user, setUser] = useState(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +19,18 @@ export function Header() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Fetch search results
+  useEffect(() => {
+    if (query.length > 1) {
+      fetch(`http://localhost:3000/search?query=${query}`)
+        .then((res) => res.json())
+        .then((data) => setResults(data.data))
+        .catch((err) => console.error("Error fetching data:", err));
+    } else {
+      setResults([]);
+    }
+  }, [query]);
 
   const handleLogout = () => {
     signOut(auth).then(() => {
@@ -36,7 +50,7 @@ export function Header() {
           </NavLink>
 
           {/* All Categories + Search bar */}
-          <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center position-relative">
             {/* All Categories Dropdown */}
             <div className="dropdown me-2">
               <button
@@ -63,14 +77,38 @@ export function Header() {
             </div>
 
             {/* Search Bar */}
-            <div className="search-bar d-flex align-items-center">
-              <input
-                type="text"
-                placeholder="Search for products..."
-                className="form-control me-2"
-                style={{ width: "400px", padding: "0.6rem 1rem", fontSize: "1rem" }}
-              />
-              <FaSearch size={24} />
+            <div className="search-bar d-flex align-items-center flex-column position-relative">
+              <div className="d-flex w-100">
+                <input
+                  type="text"
+                  placeholder="Search for products..."
+                  className="form-control me-2"
+                  style={{ width: "400px", padding: "0.6rem 1rem", fontSize: "1rem" }}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <FaSearch size={24} />
+              </div>
+
+              {/* Dropdown results */}
+              {results.length > 0 && (
+                <ul className="dropdown-menu custom-dropdown">
+                  {results.map((product) => (
+                    <li
+                      key={product._id}
+                      className="dropdown-item"
+                      onClick={() => {
+                        navigate(`/product/${product._id}`);
+                        setQuery("");
+                        setResults([]);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {product.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 

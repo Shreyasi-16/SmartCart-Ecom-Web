@@ -1,35 +1,51 @@
-// Required modules
+// ===============================
+//       Required Modules
+// ===============================
 const express = require('express');
 const mongoose = require('mongoose');
 const admin = require('firebase-admin');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ObjectId } = require('mongodb'); // 👉 For Atlas Search
+const { MongoClient, ObjectId } = require('mongodb');
+const path = require('path');
 
-// App setup
+// ===============================
+//       App Setup
+// ===============================
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Firebase Admin SDK setup
-const path = require('path');
+// ===============================
+//   Firebase Admin Setup
+// ===============================
 const serviceAccount = require(path.join(__dirname, 'firebase-service-account.json'));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// MongoDB User Schema & Model (Mongoose)
-const User = mongoose.model('User', new mongoose.Schema({
-  uid: String,
-  name: String,
-  email: String,
-  phone: String,
-  photoURL: String,
-  joinedAt: { type: Date, default: Date.now },
-}, { collection: 'users' }));
+// ===============================
+//   Mongoose User Model
+// ===============================
+const User = mongoose.model(
+  'User',
+  new mongoose.Schema(
+    {
+      uid: String,
+      name: String,
+      email: String,
+      phone: String,
+      photoURL: String,
+      joinedAt: { type: Date, default: Date.now },
+    },
+    { collection: 'users' }
+  )
+);
 
-// 🔐 Middleware: Verify Firebase ID Token
+// ===============================
+//     Firebase Auth Middleware
+// ===============================
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -47,11 +63,12 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// 🔄 Controller: Sync Firebase User → MongoDB
+// ===============================
+//   Sync Firebase User → MongoDB
+// ===============================
 const syncUser = async (req, res) => {
   try {
     const { uid } = req.user;
-
     const firebaseUser = await admin.auth().getUser(uid);
 
     const userData = {
@@ -75,106 +92,80 @@ const syncUser = async (req, res) => {
   }
 };
 
-// 🔗 Route: Sync user from Firebase
+// ===============================
+//       Routes
+// ===============================
 app.post('/sync-user', authenticate, syncUser);
 
-// 🔗 Route: Root
 app.get('/', (req, res) => {
   res.send('🚀 Backend is running!');
 });
 
-
-// =======================================
-// 🔍 Atlas Search Integration (MongoClient)
-// =======================================
-
-// MongoClient setup (used only for search, not auth)
-const client = new MongoClient("mongodb+srv://tanzeeem6:K5wI2A1mGKU3vnZl@cluster0.anb1ekt.mongodb.net/");
-let mongoClientConnected = false;
+// ===============================
+//       MongoClient Setup
+// ===============================
+const mongoUri = "mongodb+srv://tanzeeem6:K5wI2A1mGKU3vnZl@cluster0.anb1ekt.mongodb.net/";
+const client = new MongoClient(mongoUri);
 
 const dbName = 'search-db';
 const collectionName = 'products_v1';
+let collection; // global reference
 
-// 🛍️ Route: Get product by ID           
-/*-----------------------------------------
-ID ABHI TAK DATASET ME DAALI NAHI HAI 
------------------------------------------- */
-/* app.get('/products/:id', async (req, res) => {
+async function initMongoClient() {
   try {
-    if (!mongoClientConnected) {
-      await client.connect();
-      mongoClientConnected = true;
-      console.log("✅ MongoClient connected (for Atlas Search)");
-    }
-
-    const { id } = req.params;
+    await client.connect();
+    console.log("✅ MongoClient connected (for Atlas Search)");
     const db = client.db(dbName);
-    const collection = db.collection(collectionName);
+    collection = db.collection(collectionName);
+  } catch (err) {
+    console.error("❌ MongoClient connection error:", err);
+    process.exit(1);
+  }
+}
 
-    // Try both ObjectId and String match
-    let query = [{ _id: id }]; 
+// ===============================
+//   Products Routes
+// ===============================
+app.get('/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    let mongoQuery;
+
     try {
-      query.push({ _id: new ObjectId(id) });
-    } catch (e) {
-      console.warn("⚠️ Not a valid ObjectId, will only check string _id");
+      mongoQuery = { _id: new ObjectId(id) };
+    } catch {
+      mongoQuery = { _id: id };
     }
 
-    const result = await collection.findOne({ $or: query });
+    const result = await collection.findOne(mongoQuery);
 
-    if (!result) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
+    if (!result) return res.status(404).json({ message: "Product not found" });
     res.status(200).json({ data: result });
   } catch (err) {
     console.error("❌ Error fetching product by ID:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-*/
 
-// 🔍 Route: Search products by name
 app.get('/search', async (req, res) => {
   try {
-    if (!mongoClientConnected) {
-      await client.connect();
-      mongoClientConnected = true;
-      console.log("✅ MongoClient connected (for Atlas Search)");
-    }
-
     const { query } = req.query;
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
 
     const aggregationPipeline = [
-  {
-    $search: {
-      index: "productSearchIndex",
-      compound: {
-        should: [
-          {
-            autocomplete: {
-              query: query,
-              path: "name",
-              fuzzy: { maxEdits: 1 }
-            }
-          },
-          {
-            autocomplete: {
-              query: query,
-              path: "sub_category",
-              fuzzy: { maxEdits: 1 }
-            }
+      {
+        $search: {
+          index: "productSearchIndex",
+          compound: {
+            should: [
+              { autocomplete: { query, path: "name", fuzzy: { maxEdits: 1 } } },
+              { autocomplete: { query, path: "sub_category", fuzzy: { maxEdits: 1 } } }
+            ],
+            minimumShouldMatch: 1
           }
-        ]
-      }
-    }
-  },
-  { $limit: 5 }
-];
-
-
-
+        }
+      },
+      { $limit: 6 }
+    ];
 
     const results = await collection.aggregate(aggregationPipeline).toArray();
     res.status(200).json({ data: results });
@@ -184,15 +175,25 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// =======================================
-// ✅ Connect to MongoDB via Mongoose (for Users)
-// =======================================
+// ===============================
+//       Start Server
+// ===============================
+async function startServer() {
+  try {
+    // Connect MongoClient for Atlas Search
+    await initMongoClient();
 
-mongoose.connect("mongodb+srv://tanzeeem6:K5wI2A1mGKU3vnZl@cluster0.anb1ekt.mongodb.net/smartcart")
-  .then(() => {
-    console.log('✅ Mongoose Connected to MongoDB');
-    app.listen(3000, () =>
-      console.log(`🚀 Server running at http://localhost:3000`)
+    // Connect Mongoose
+    await mongoose.connect(
+      "mongodb+srv://tanzeeem6:K5wI2A1mGKU3vnZl@cluster0.anb1ekt.mongodb.net/smartcart"
     );
-  })
-  .catch(err => console.error('❌ Mongoose connection error:', err));
+    console.log('✅ Mongoose Connected to MongoDB');
+
+    // Start server
+    app.listen(3000, () => console.log(`🚀 Server running at http://localhost:3000`));
+  } catch (err) {
+    console.error('❌ Server startup error:', err);
+  }
+}
+
+startServer();

@@ -4,6 +4,7 @@ import "@fontsource/poppins"; // Defaults to weight 400
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Home } from './pages/Home.jsx';
 import { Product } from './pages/Product.jsx';
+import ProductPage from './pages/ProductPage.jsx'; 
 import { Contact } from './pages/Contact.jsx';
 import { Cart } from './pages/Cart.jsx';
 import { Signup } from './pages/Signup.jsx';
@@ -28,6 +29,9 @@ function App() {
           path: '/product',
           element: <Product />,
         },
+        { path: '/product/:productId', 
+          element: <ProductPage /> 
+        }, 
         {
           path: '/contact',
           element: <Contact />,

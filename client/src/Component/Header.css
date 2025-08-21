@@ -9,7 +9,7 @@
   z-index: 1000;
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 /* Brand */
@@ -56,6 +56,15 @@
   padding: 0.3rem 0.6rem;
   display: flex;
   align-items: center;
+}
+.custom-dropdown { /*for search*/
+  max-height: 600px !important;   /* restrict height */
+  overflow-y: auto !important;    /* force scroll when overflow */
+  width: 450px !important;        /* wider dropdown */
+  display: block !important;      /* keep it visible */
+  position: absolute !important;  /* anchor below input */
+  z-index: 1050 !important;       /* ensure it's above other elements */
+  background-color: white;
 }
 
 .search-bar input {
