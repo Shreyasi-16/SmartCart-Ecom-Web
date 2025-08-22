@@ -9,8 +9,20 @@
   left: 0;
   right: 0;
   z-index: 1000;
+<<<<<<< HEAD
   display: flex;
   flex-direction: column;
+=======
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  /* overflow: hidden; */
+}
+
+/* Brand */
+.navbar-brand {
+  color: rgb(210, 199, 172) !important;
+  text-decoration: none;
+>>>>>>> b7174fc525cfbb105c9c93d078b0375de98f4569
   font-weight: bolder;
   justify-content: space-between;
 }
@@ -32,6 +44,15 @@
 .search-wrapper {
   position: relative;
   flex: 1;
+}
+.custom-dropdown { /*for search*/
+  max-height: 600px !important;   /* restrict height */
+  overflow-y: auto !important;    /* force scroll when overflow */
+  width: 450px !important;        /* wider dropdown */
+  display: block !important;      /* keep it visible */
+  position: absolute !important;  /* anchor below input */
+  z-index: 1050 !important;       /* ensure it's above other elements */
+  background-color: white;
 }
 
 .search-bar input {
