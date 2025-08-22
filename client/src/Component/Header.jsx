@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaSearch, FaShoppingCart, FaUser, FaHeart } from "react-icons/fa";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 import app from "../firebase";
 import "./Header.css";
+import DropDownMenu from "./DropDownMenu";
 
 const auth = getAuth(app);
 
@@ -11,12 +12,23 @@ export function Header() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
+    const timer = setTimeout(() => {
+      if (query.length > 1) {
+        fetch(`http://localhost:5000/products/search?query=${query}`)
+          .then((res) => res.json())
+          .then((data) => setResults(data.data))
+          .catch((err) => console.error("Error fetching data:", err));
+      } else {
+        setResults([]);
+      }
+    }, 300); // debounce 300ms
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleLogout = () => {
     signOut(auth).then(() => {
@@ -27,55 +39,41 @@ export function Header() {
 
   return (
     <>
-      <header className="header-section">
+      <header className="header">
         {/* Row 1 */}
-        <div className="header-top d-flex align-items-center justify-content-between p-2">
+        <div className="header-row">
           {/* Logo */}
           <NavLink to="/" className="navbar-brand fw-bold fs-4">
-            SmartCart
+            <img src="logo.png" height="50px" width="150" alt="SmartCart Logo" />
           </NavLink>
 
-          {/* All Categories + Search bar */}
-          <div className="d-flex align-items-center">
-            {/* All Categories Dropdown */}
-            <div className="dropdown me-2">
-              <button
-                className="btn btn-outline-secondary dropdown-toggle"
-                type="button"
-                id="categoryDropdown"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                All Categories
-              </button>
-              <ul className="dropdown-menu" aria-labelledby="categoryDropdown">
-                <li>
-                  <button className="dropdown-item" onClick={() => navigate("/buy")}>
-                    Buy
-                  </button>
-                </li>
-                <li>
-                  <button className="dropdown-item" onClick={() => navigate("/sell")}>
-                    Sell
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Search Bar */}
-            <div className="search-bar d-flex align-items-center">
+          {/* Search Bar */}
+          <div className="search-bar">
+            <div className="search-wrapper">
               <input
                 type="text"
                 placeholder="Search for products..."
                 className="form-control me-2"
                 style={{ width: "400px", padding: "0.6rem 1rem", fontSize: "1rem" }}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
               <FaSearch size={24} />
+              {/* Search results dropdown */}
+              {results.length > 0 && (
+                <ul className="search-results">
+                  {results.map((item) => (
+                    <li key={item._id} onClick={() => navigate(`/product/${item._id}`)}>
+                      {item.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
-          {/* Right side: Login/Profile + Become Seller */}
-          <div className="d-flex align-items-center gap-3">
+          {/* User buttons */}
+          <div className="user-actions">
             {user ? (
               <>
                 <FaUser
@@ -87,14 +85,11 @@ export function Header() {
                   className="btn btn-warning btn-sm"
                   onClick={() => navigate("/become-seller")}
                 >
-                  Become a Seller
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={handleLogout}>
-                  Logout
+                  Sell
                 </button>
               </>
             ) : (
-              <button className="btn btn-primary" onClick={() => navigate("/login")}>
+              <button className="login btn" onClick={() => navigate("/login")}>
                 Login
               </button>
             )}
@@ -102,15 +97,26 @@ export function Header() {
         </div>
 
         {/* Row 2 */}
-        <div className="header-bottom d-flex align-items-center justify-content-center gap-4 py-2 border-top">
-          <NavLink to="/" className="nav-link">Home</NavLink>
-          <NavLink to="/product" className="nav-link">Products</NavLink>
-          <NavLink to="/cart" className="nav-link d-flex align-items-center gap-1">
-            <FaShoppingCart /> Cart
-          </NavLink>
-          <NavLink to="/wishlist" className="nav-link d-flex align-items-center gap-1">
-            <FaHeart /> Wishlist
-          </NavLink>
+        <div className="nav-links">
+          {/* Category dropdown in left corner */}
+          <div className="category-dropdown">
+            <DropDownMenu />
+          </div>
+
+          <div className="nav-center">
+            <NavLink to="/" className="nav-link">
+              Home
+            </NavLink>
+            <NavLink to="/product" className="nav-link">
+              Products
+            </NavLink>
+            <NavLink to="/cart" className="nav-link d-flex align-items-center gap-1">
+              <FaShoppingCart /> Cart
+            </NavLink>
+            <NavLink to="/wishlist" className="nav-link d-flex align-items-center gap-1">
+              <FaHeart /> Wishlist
+            </NavLink>
+          </div>
         </div>
       </header>
 

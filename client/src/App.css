@@ -5,102 +5,18 @@
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  box-sizing: border-box;  
 }
 
 /* Apply global font and background */
 /* App.css */
 
 body {
-  background-color: #b6aeb6 !important ;/* Change this to your desired background color */
-  font-family: 'Poppins', sans-serif;
-  color: #fbfdfe;
+   /* Change this to your desired background color */
+  font-family: 'Poppins', sans-serif;  
   margin: 0;
   padding: 0;
   min-height: 100vh;
-}
-
-
-/* Links */
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-a:hover {
-  text-decoration: none;
-  color: #007bff;
-}
-
-/* Utility container spacing */
-.container {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-}
-
-/* Buttons */
-button {
-  font-family: inherit;
-  font-size: 1rem;
-}
-
-/* Navbar override */
-.navbar {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  color: #0f0f6d;
-}
-
-/* Home page wrapper */
-.home-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-  background-color: #f8f9fa;
-}
-
-/* Position card below header */
-.home-page {
-  background-color: #dde1e8; /* light background like Material Kit */
-  padding-top: 0px; 
-  padding-bottom: 50px;
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-/* Big floating card styled like Material Kit */
-.home-card {
-  background-color: #ffffff;
-  border-radius: 1rem;
-  padding: 2.5rem;
-  max-width: 1400px;
-  width: 95%;
-  margin: auto;
-  margin-top: -60px; /* reduced so it doesn't hide text */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 5;
-  position: relative;
-}
-
-.home-card h2,
-.home-card p {
-  color: #333; /* ensure readability */
-}
-
-/* Product card style */
-.product-card {
-  width: 200px;
-  padding: 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.75rem;
-  background-color: #ffffff;
-  transition: transform 0.2s ease-in-out;
-}
-
-.product-card:hover {
-  transform: scale(1.05);
+  padding-top: 155px;
+  background: linear-gradient(to bottom, #bfade1 0%,white 100%) !important;
 }
