@@ -6,7 +6,7 @@ const ProductPage = () => {
     const {productId} = useParams();
   
     useEffect(() => {
-      fetch(`http://localhost:3000/products/${productId}`)
+      fetch(`http://localhost:5000/products/${productId}`)
     .then((res) => res.json())
     .then((data) => {
       console.log("Fetched product:", data);
