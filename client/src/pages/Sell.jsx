@@ -36,45 +36,48 @@ export default function Sell() {
 
   // Simple example forms based on category
   const renderForm = () => {
-    switch (selectedCategory) {
-      case "Cars":
-        return (
-          <form className="category-form">
-            <h3>Post an Ad for Cars</h3>
-            <input type="text" placeholder="Brand" required />
-            <input type="text" placeholder="Model" required />
-            <input type="number" placeholder="Year" required />
-            <input type="number" placeholder="Price" required />
-            <textarea placeholder="Description" required></textarea>
-            <button type="submit">Submit</button>
-            <button type="button" onClick={() => setSelectedCategory(null)}>Back</button>
-          </form>
-        );
-      case "Mobiles":
-        return (
-          <form className="category-form">
-            <h3>Post an Ad for Mobiles</h3>
-            <input type="text" placeholder="Brand" required />
-            <input type="text" placeholder="Model" required />
-            <input type="number" placeholder="Price" required />
-            <textarea placeholder="Description" required></textarea>
-            <button type="submit">Submit</button>
-            <button type="button" onClick={() => setSelectedCategory(null)}>Back</button>
-          </form>
-        );
-      default:
-        return (
-          <form className="category-form">
-            <h3>Post an Ad for {selectedCategory}</h3>
-            <input type="text" placeholder="Title" required />
-            <input type="number" placeholder="Price" required />
-            <textarea placeholder="Description" required></textarea>
-            <button type="submit">Submit</button>
-            <button type="button" onClick={() => setSelectedCategory(null)}>Back</button>
-          </form>
-        );
-    }
-  };
+  return (
+    <div className="form-container">
+      {/* Back Arrow */}
+      <button
+        className="back-arrow"
+        onClick={() => setSelectedCategory(null)}
+      >
+        ←
+      </button>
+
+      {/* Form content */}
+      {selectedCategory === "Cars" ? (
+        <form className="category-form">
+          <h3>Post an Ad for Cars</h3>
+          <input type="text" placeholder="Brand" required />
+          <input type="text" placeholder="Model" required />
+          <input type="number" placeholder="Year" required />
+          <input type="number" placeholder="Price" required />
+          <textarea placeholder="Description" required></textarea>
+          <button type="submit">Submit</button>
+        </form>
+      ) : selectedCategory === "Mobiles" ? (
+        <form className="category-form">
+          <h3>Post an Ad for Mobiles</h3>
+          <input type="text" placeholder="Brand" required />
+          <input type="text" placeholder="Model" required />
+          <input type="number" placeholder="Price" required />
+          <textarea placeholder="Description" required></textarea>
+          <button type="submit">Submit</button>
+        </form>
+      ) : (
+        <form className="category-form">
+          <h3>Post an Ad for {selectedCategory}</h3>
+          <input type="text" placeholder="Title" required />
+          <input type="number" placeholder="Price" required />
+          <textarea placeholder="Description" required></textarea>
+          <button type="submit">Submit</button>
+        </form>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="sell-container">

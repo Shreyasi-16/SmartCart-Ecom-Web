@@ -1,30 +1,48 @@
-/* src/pages/Sell.css */
 .sell-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 30px;
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .sell-title {
   text-align: center;
-  font-weight: bold;
+  font-weight: 700;
   margin-bottom: 20px;
-  font-size: 22px;
-  color: #001f3f;
 }
 
 .sell-box {
-  width: 600px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   padding: 20px;
-  background-color: #fff;
+  position: relative; /* 🔹 so back arrow stays inside */
+}
+
+/* 🔹 Back Arrow */
+.back-arrow {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+  padding: 6px 10px;
+  border-radius: 50%;
+  transition: background 0.2s ease-in-out;
+}
+
+.back-arrow:hover {
+  background: #f5f5f5;
 }
 
 .category-heading {
-  font-weight: bold;
-  font-size: 14px;
+  font-size: large;
+  color: #fc9c1f;
   margin-bottom: 15px;
+  font-weight: bolder;
 }
 
 .category-list {
@@ -37,32 +55,89 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #d9d9d9;
-  padding: 12px 16px;
-  border-radius: 2px;
-  margin-bottom: 8px;
-  background: #fff;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .category-item:hover {
-  background: #f5f5f5;
+  background: #eef2f6;
 }
 
 .category-icon {
-  font-size: 18px;
-  margin-right: 12px;
-  color: #333;
+  font-size: 1.3rem;
+  margin-right: 15px;
+  color: #1a0962;
 }
 
 .category-name {
-  flex: 1;
-  font-size: 15px;
-  color: #333;
+  flex-grow: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1a0962;
 }
 
 .category-arrow {
-  font-size: 18px;
-  color: #777;
+  font-size: 1.2rem;
+  color: #000000;
+}
+
+/* Forms */
+.category-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 40px; /* 🔹 space below arrow */
+}
+
+.category-form h3 {
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  text-align: center;
+  color: #fc9c1f;
+  font-weight: bolder;
+}
+
+.category-form input,
+.category-form textarea,
+.category-form select {
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.category-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.category-form button {
+  padding: 12px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease-in-out;
+}
+
+.category-form button[type="submit"] {
+  background:#002347;
+  color: #fff;
+}
+
+.category-form button[type="submit"]:hover {
+  border: #ffffff;
+}
+
+.category-form button[type="button"] {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.category-form button[type="button"]:hover {
+  background: #e1e1e1;
 }
