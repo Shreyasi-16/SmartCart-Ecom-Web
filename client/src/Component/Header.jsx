@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaSearch, FaShoppingCart, FaUser, FaHeart } from "react-icons/fa";
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth"; // ⬅️ import this
 import app from "../firebase";
 import "./Header.css";
 import DropDownMenu from "./DropDownMenu";
@@ -15,21 +15,28 @@ export function Header() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
 
+  // ✅ Listen for login/logout state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.length > 1) {
-       fetch(`http://localhost:5000/products/search?query=${query}`)
-
+        fetch(`http://localhost:5000/products/search?query=${query}`)
           .then((res) => res.json())
           .then((data) => {
-          console.log("Search results:", data.data); // <-- Add this
-          setResults(data.data);
-        })
+            console.log("Search results:", data.data);
+            setResults(data.data);
+          })
           .catch((err) => console.error("Error fetching data:", err));
       } else {
         setResults([]);
       }
-    }, 300); // debounce 300ms
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -65,87 +72,88 @@ export function Header() {
               <FaSearch size={24} />
               {/* Search results dropdown */}
               {results.length > 0 && (
-                  <ul
-                    className="search-results"
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      width: "100%",
-                      backgroundColor: "white",
-                      color: "black",
-                      border: "1px solid #ddd",
-                      borderRadius: "6px",
-                      marginTop: "5px",
-                      listStyle: "none",
-                      padding: 0,
-                      maxHeight: "250px",
-                      overflowY: "auto",
-                      zIndex: 1000,
-                      boxShadow: "0px 4px 8px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    {results.map((item) => (
-                      <li
-                        key={item._id}
-                        onClick={() => {
-                          navigate(`/product/${item._id}`)
+                <ul
+                  className="search-results"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    width: "100%",
+                    backgroundColor: "white",
+                    color: "black",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    marginTop: "5px",
+                    listStyle: "none",
+                    padding: 0,
+                    maxHeight: "250px",
+                    overflowY: "auto",
+                    zIndex: 1000,
+                    boxShadow: "0px 4px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {results.map((item) => (
+                    <li
+                      key={item._id}
+                      onClick={() => {
+                        navigate(`/product/${item._id}`);
+                        setResults([]);
+                        setQuery("");
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        padding: "0.5rem",
+                        borderBottom: "1px solid #eee",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "white")
+                      }
+                    >
+                      {/* Product Image with fallback */}
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name || "Product"}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/placeholder.png";
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src="/placeholder.png"
+                          alt="No Image"
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                        />
+                      )}
 
-                          setResults([]);
-                          setQuery("");
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          padding: "0.5rem",
-                          borderBottom: "1px solid #eee",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-                      >
-                        {/* Product Image with fallback */}
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name || "Product"}
-                            style={{
-                              width: "40px",
-                              height: "40px",
-                              objectFit: "cover",
-                              borderRadius: "4px",
-                            }}
-                            onError={(e) => {
-                              e.target.onerror = null; // prevent infinite loop
-                              e.target.src = "/placeholder.png"; // fallback image in public/
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src="/placeholder.png"
-                            alt="No Image"
-                            style={{
-                              width: "40px",
-                              height: "40px",
-                              objectFit: "cover",
-                              borderRadius: "4px",
-                            }}
-                          />
-                        )}
-
-                        {/* Product Name */}
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 500, fontSize: "0.95rem" }}>
-                            {item.name || "No Name"}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-
+                      {/* Product Name */}
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontWeight: 500, fontSize: "0.95rem" }}>
+                          {item.name || "No Name"}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
@@ -160,7 +168,7 @@ export function Header() {
                 />
                 <button
                   className="btn btn-warning btn-sm"
-                  onClick={() => navigate("/become-seller")}
+                  onClick={() => navigate("/Sell")}
                 >
                   Sell
                 </button>
@@ -175,7 +183,6 @@ export function Header() {
 
         {/* Row 2 */}
         <div className="nav-links">
-          {/* Category dropdown in left corner */}
           <div className="category-dropdown">
             <DropDownMenu />
           </div>
@@ -197,8 +204,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Spacer */}
       <div className="header-spacer"></div>
-    </>
-  );
+    </>
+  );
 }
