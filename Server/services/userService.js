@@ -12,6 +12,7 @@ const syncUser = async (req, res) => {
       name: firebaseUser.displayName || "",
       email: firebaseUser.email || "",
       phone: firebaseUser.phoneNumber || "",
+    aboutMe:firebaseUser.aboutMe || "",
       photoURL: firebaseUser.photoURL || "",
     };
 

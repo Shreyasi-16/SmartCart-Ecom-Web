@@ -1,0 +1,41 @@
+/* DropDownMenu.css */
+
+.select-div {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.form-select {
+  width: 250px;
+  padding: 10px 14px;
+  border: 2px solid #14345a;
+  border-radius: 8px;
+  background-color: #f3f3f4;
+  font-size: 16px;
+  font-weight: bolder;
+  color: #333;
+  outline-width: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Hover effect */
+.form-select:hover {
+    background-color: rgb(225, 236, 237);
+  box-shadow: 0px 4px 8px rgba(223, 139, 13, 0.1);
+  color: #19365f;
+}
+
+/* Focus effect */
+.form-select:focus {
+  border-color: #ffffff;
+  box-shadow: 0px 0px 6px rgba(42, 110, 204, 0.5);
+}
+
+/* Dropdown options */
+.form-select option {
+  padding: 10px;
+  font-size: 15px;
+  font-weight: bold;
+}

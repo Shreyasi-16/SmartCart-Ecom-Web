@@ -33,7 +33,7 @@ export function Login() {
       if (error.code === "auth/wrong-password") {
         alert("❌ Incorrect password.");
       } else if (error.code === "auth/user-not-found") {
-        alert("❌ User not found.");
+        alert("❌ User not found.");z
       } else {
         alert("Login Error: " + error.message);
       }

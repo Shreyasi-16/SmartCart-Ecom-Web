@@ -91,50 +91,79 @@ export function Signup() {
   };
 
   return (
-   
-      <div className="signup-container">
-      <form className="signup-form" onSubmit={handleEmailSignup}>
-        <h2>Create Account</h2>
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={pass}
-          onChange={(e) => setPass(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPass}
-          onChange={(e) => setConfirmPass(e.target.value)}
-          required
-        />
-        <button type="submit">Sign Up</button>
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          style={{ marginTop: "10px" }}
-        >
-          Sign Up with Google
-        </button>
-        <p>
-          Already have an account? <a href="/login">Login</a>
-        </p>
-      </form>
+    <div className="signup-page">
+      <div className="signup-card">
+        <div className="signup-left">
+          <form className="signup-form" onSubmit={handleEmailSignup}>
+            <h2>Sign up</h2>
+
+            <div className="input-group">
+              <span className="icon">👤</span>
+              <input
+                type="text"
+                placeholder="Your Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <span className="icon">📧</span>
+              <input
+                type="email"
+                placeholder="Your Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <span className="icon">🔒</span>
+              <input
+                type="password"
+                placeholder="Password"
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <span className="icon">🔑</span>
+              <input
+                type="password"
+                placeholder="Repeat your password"
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+                required
+              />
+            </div>
+
+        
+
+            <button type="submit" className="register-btn">
+              REGISTER
+            </button>
+
+            <button
+              type="button"
+              className="google-btn"
+              onClick={handleGoogleSignup}
+            >
+              Sign Up with Google
+            </button>
+          </form>
+        </div>
+
+        <div className="signup-right">
+          <img
+            src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-registration/draw1.webp"
+            alt="signup illustration"
+          />
+        </div>
+      </div>
     </div>
   );
 }

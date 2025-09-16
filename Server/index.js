@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -6,14 +7,18 @@ require("dotenv").config();
 
 const userRoutes = require("./routes/userRoutes");
 const { router: productRoutes, setCollection } = require("./routes/productRoutes");
-
+const sellRoutes = require("./routes/sellRoutes");
+const updateProfile = require("./routes/updateProfile"); 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
 // Routes
 app.use(userRoutes);
 app.use("/products", productRoutes);
+app.use("/api/sell", sellRoutes);
+app.use("/api/users", updateProfile);
 
 app.get("/", (req, res) => {
   res.send("🚀 Backend is running!");
@@ -46,4 +51,3 @@ async function startServer() {
 }
 
 startServer();
-

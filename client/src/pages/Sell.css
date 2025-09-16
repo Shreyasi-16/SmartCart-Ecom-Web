@@ -1,3 +1,4 @@
+/* ------------------- Sell Container & Form (Existing) ------------------- */
 .sell-container {
   max-width: 800px;
   margin: 40px auto;
@@ -16,13 +17,13 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   padding: 20px;
-  position: relative; /* 🔹 so back arrow stays inside */
+  position: relative;
 }
 
-/* 🔹 Back Arrow */
+/* Back Arrow */
 .back-arrow {
   position: absolute;
-  top: 15px;
+  top: 10px;
   left: 15px;
   background: transparent;
   border: none;
@@ -38,11 +39,13 @@
   background: #f5f5f5;
 }
 
+/* Category List */
 .category-heading {
-  font-size: large;
-  color: #fc9c1f;
+  font-size: 0.9rem;
+  color: #f4793c;
   margin-bottom: 15px;
   font-weight: bolder;
+  font-size: larger;
 }
 
 .category-list {
@@ -62,32 +65,32 @@
 }
 
 .category-item:hover {
-  background: #eef2f6;
+  background: #cedbe9;
 }
 
 .category-icon {
   font-size: 1.3rem;
   margin-right: 15px;
-  color: #1a0962;
+  color: #14105b;
 }
 
 .category-name {
   flex-grow: 1;
   font-size: 1rem;
   font-weight: 500;
-  color: #1a0962;
+  color: #14105b;
 }
 
 .category-arrow {
   font-size: 1.2rem;
-  color: #000000;
+  color: #070707;
 }
 
 /* Forms */
 .category-form {
   display: flex;
   flex-direction: column;
-  margin-top: 40px; /* 🔹 space below arrow */
+  margin-top: 40px;
 }
 
 .category-form h3 {
@@ -95,8 +98,6 @@
   margin-bottom: 20px;
   font-size: 1.3rem;
   text-align: center;
-  color: #fc9c1f;
-  font-weight: bolder;
 }
 
 .category-form input,
@@ -125,12 +126,12 @@
 }
 
 .category-form button[type="submit"] {
-  background:#002347;
+  background: #002f34;
   color: #fff;
 }
 
 .category-form button[type="submit"]:hover {
-  border: #ffffff;
+  background: #014950;
 }
 
 .category-form button[type="button"] {
@@ -140,4 +141,104 @@
 
 .category-form button[type="button"]:hover {
   background: #e1e1e1;
+}
+
+/* Photos grid */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.photo-box {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: #fafafa;
+  position: relative;
+}
+
+.photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plus {
+  font-size: 28px;
+  font-weight: bold;
+  color: #999;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ------------------- Bike Subcategory Grid ------------------- */
+.subcategory-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.subcategory-card {
+  background-color: #f0eeee;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subcategory-card:hover {
+  background-color: #61758a;
+  color: white;
+  transform: translateY(-3px);
+}
+
+.subcategory-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.subcategory-arrow {
+  font-size: 18px;
+}
+
+/* ------------------- Button Group ------------------- */
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.button-group button {
+  padding: 8px 16px;
+  border: 1px solid #888;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-group button:hover {
+  background: #f0f0f0;
+}
+
+.button-group button.selected {
+  background: #ee944a;
+  color: white;
+  border-color: #ee944a;
 }
