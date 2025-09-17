@@ -8,7 +8,6 @@ const Profile = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [showForm, setShowForm] = useState(false);
-
   const [formData, setFormData] = useState({
     name: "",
     phone: "",

@@ -6,12 +6,16 @@ const productSchema = new mongoose.Schema({
   description: String,
   price: String,
   state: String,
-  city: String,
-  
+  city: String,    
   attributes: Object,
   photos: [String],
   
   createdAt: { type: Date, default: Date.now },
+  seller: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 });
 
 module.exports = mongoose.model("Products", productSchema);

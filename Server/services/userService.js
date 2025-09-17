@@ -12,10 +12,10 @@ const syncUser = async (req, res) => {
       name: firebaseUser.displayName || "",
       email: firebaseUser.email || "",
       phone: firebaseUser.phoneNumber || "",
-    aboutMe:firebaseUser.aboutMe || "",
+      aboutMe:firebaseUser.aboutMe || "",
       photoURL: firebaseUser.photoURL || "",
     };
-
+ 
     const user = await User.findOneAndUpdate(
       { uid },
       { $set: userData },

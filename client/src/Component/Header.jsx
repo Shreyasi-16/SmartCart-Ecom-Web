@@ -55,7 +55,7 @@ export function Header() {
         <div className="header-row">
           {/* Logo */}
           <NavLink to="/" className="navbar-brand fw-bold fs-4">
-            <img src="logo.png" height="50px" width="150" alt="SmartCart Logo" />
+            <img src="logo-transparent-png.png" height="100%" width="100%" alt="SmartCart Logo" />
           </NavLink>
 
           {/* Search Bar */}

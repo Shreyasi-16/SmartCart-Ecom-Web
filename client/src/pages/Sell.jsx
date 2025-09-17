@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
+
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
 import "./Sell.css";
 import {
   FaCar,
@@ -26,6 +30,22 @@ export default function Sell() {
   const [fuel, setFuel] = useState("");
   const [transmission, setTransmission] = useState("");
   const [owner, setOwner] = useState("");
+  const [userId, setUserId] = useState(null);
+
+  const auth = getAuth();
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUserId(user.uid);  // ✅ get Firebase UID
+    } else {
+      setUserId(null);
+    }
+  });
+
+  return () => unsubscribe();
+}, [auth]);
+
 
   // -------------------
   // Subcategories
@@ -160,6 +180,7 @@ export default function Sell() {
       categoryId: String(selectedCategory ?? ""),
       photos: photos.filter((p) => p !== null),
       attributes,
+     seller: userId   
     };
 
     console.log("Submitting productData:", productData);
