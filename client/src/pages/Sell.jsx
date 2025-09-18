@@ -1,22 +1,15 @@
-
 import React, { useState, useEffect } from "react";
-
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-
 import "./Sell.css";
 import {
   FaCar,
-  FaHome,
   FaMobileAlt,
-  FaBriefcase,
   FaBicycle,
   FaTv,
-  FaTruck,
   FaCouch,
   FaTshirt,
   FaBook,
   FaDog,
-  FaTools,
 } from "react-icons/fa";
 
 // Main Sell Component
@@ -34,18 +27,17 @@ export default function Sell() {
 
   const auth = getAuth();
 
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      setUserId(user.uid);  // ✅ get Firebase UID
-    } else {
-      setUserId(null);
-    }
-  });
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid); // ✅ get Firebase UID
+      } else {
+        setUserId(null);
+      }
+    });
 
-  return () => unsubscribe();
-}, [auth]);
-
+    return () => unsubscribe();
+  }, [auth]);
 
   // -------------------
   // Subcategories
@@ -59,15 +51,14 @@ useEffect(() => {
     "Washing Machines",
     "Cameras & Lenses",
   ];
-  const mobileSubcategories = [
-    "Mobile Phones",
-    "Tablets",
-  ];
-  const fashionSubcategories = [
-  "Men",
-  "Women",
-  "Kids",
-];
+  const mobileSubcategories = ["Mobile Phones", "Tablets"];
+  const fashionSubcategories = ["Men", "Women", "Kids"];
+  const fashionNestedSubcategories = {
+  Men: ["Clothing", "Accessories"],
+  Women: ["Clothing", "Accessories"],
+  Kids: ["Clothing", "Accessories"],
+};
+const booksSportsHobbiesSubcategories = ["Books", "Sports", "Hobbies"];
 
 
   // -------------------
@@ -133,9 +124,11 @@ useEffect(() => {
     // Attributes per category
     let attributes = {};
 
-    if (selectedCategory === 1) { // Cars
+
+    if (selectedCategory === 1) {
+      // Cars
       attributes = {
-        model : formData.model || "",
+        model: formData.model || "",
         brand: formData.brand || "",
         year: formData.year || "",
         kmDriven: formData.kmDriven || "",
@@ -145,42 +138,121 @@ useEffect(() => {
       };
     }
 
-    if (selectedCategory === 2) { // Mobiles
-    if (selectedSubcategory === "Mobile Phones") {
-      attributes = {
-        year: formData.year || "",
-        brand: formData.brand || "",
-      };
+    if (selectedCategory === 2) {
+      // Mobiles
+      if (selectedSubcategory === "Mobile Phones") {
+        attributes = {
+          year: formData.year || "",
+          brand: formData.brand || "",
+        };
+      }
+      if (selectedSubcategory === "Tablets") {
+        attributes = {
+          tabletType: formData.tabletType || "",
+          year: formData.year || "",
+        };
+      }
     }
-    if (selectedSubcategory === "Tablets") {
-      attributes = {
-        tabletType: formData.tabletType || "",
-        year: formData.year || "",
-      };
-    }
-  }
 
-  if (selectedCategory === 3) { // Bikes
+    if (selectedCategory === 3) {
+      // Bikes
+      attributes = {
+        brand: formData.brand || "",
+        model: formData.model || "",
+        year: formData.year || "",
+        kmDriven: formData.kmDriven || "",
+        vehicleType: formData.vehicleType || "",
+      };
+    }
+
+    if (selectedCategory === 4) {
+      // Electronics & Appliances
+      attributes = {
+        brand: formData.brand || "",
+        model: formData.model || "",
+        year: formData.year || "",
+      };
+    }
+
+    if (selectedCategory === 5) {
+      // Furniture & Decor
+      attributes = {
+        brand: formData.brand || "",
+        model: formData.model || "",
+        year: formData.year || "",
+      };
+    }
+if (selectedCategory === 8) {
   attributes = {
-    brand: formData.brand || "",
-    model: formData.model || "",
     year: formData.year || "",
-    kmDriven: formData.kmDriven || "",
-    vehicleType:formData.vehicleType || "",
+    type: formData.type || "",
+  };
+}
+
+   
+
+    // -------------------
+    // Category ID override for Mobiles
+    // -------------------
+    let categoryId = selectedCategory;
+    if (selectedCategory === 2 && selectedSubcategory === "Mobile Phones") {
+      categoryId = 201;
+    }
+    if (selectedCategory === 2 && selectedSubcategory === "Tablets") {
+      categoryId = 202;
+    }
+
+    if (selectedCategory === 4) {
+      if (selectedSubcategory === "TVs, Video - Audio") categoryId = 401;
+      if (selectedSubcategory === "Computers & Laptops") categoryId = 402;
+      if (selectedSubcategory === "Cameras & Lenses") categoryId = 403;
+      if (selectedSubcategory === "Fridges") categoryId = 405;
+      if (selectedSubcategory === "Washing Machines") categoryId = 406;
+    }
+    if (selectedCategory === 6) {
+  if (selectedSubcategory === "Women" && formData.fashionType === "Clothing")
+    categoryId = 601;
+  if (selectedSubcategory === "Women" && formData.fashionType === "Accessories")
+    categoryId = 602;
+  if (selectedSubcategory === "Men" && formData.fashionType === "Clothing")
+    categoryId = 603;
+  if (selectedSubcategory === "Men" && formData.fashionType === "Accessories")
+    categoryId = 604;
+  if (selectedSubcategory === "Kids" && formData.fashionType === "Clothing")
+    categoryId = 605;
+  if (selectedSubcategory === "Kids" && formData.fashionType === "Accessories")
+    categoryId = 606;
+}
+if (selectedCategory === 7) {
+  if (selectedSubcategory === "Books") categoryId = 701;
+  if (selectedSubcategory === "Sports") categoryId = 702;
+  if (selectedSubcategory === "Hobbies") categoryId = 703;
+
+  attributes = {
+    year: formData.year || "",
+    condition: formData.condition || "",
   };
 }
 
 
+    if (selectedCategory === 6) {
+  // Fashion
+  attributes = {
+    brand: formData.brand || "",
+    year: formData.year || "",
+    size: formData.size || "",
+  };
+}
     const productData = {
       title: title || "",
       description: description || "",
       price: price || "",
       state: state || "",
       city: city || "",
-      categoryId: String(selectedCategory ?? ""),
+      categoryId: String(categoryId ?? ""),
       photos: photos.filter((p) => p !== null),
       attributes,
-     seller: userId   
+      seller: userId,
     };
 
     console.log("Submitting productData:", productData);
@@ -250,6 +322,121 @@ useEffect(() => {
       />
     </>
   );
+const renderBooksSportsHobbiesForm = () => {
+  // Step 1: Subcategory selection
+  if (!selectedSubcategory) {
+    return (
+      <div className="form-container">
+        <button className="back-arrow" onClick={() => setSelectedCategory(null)}>
+          ←
+        </button>
+        <div className="subcategory-grid">
+          {["Books", "Sports", "Hobbies"].map((sub) => (
+            <div
+              key={sub}
+              className="subcategory-card"
+              onClick={() => setSelectedSubcategory(sub)}
+            >
+              <span className="subcategory-name">{sub}</span>
+              <span className="subcategory-arrow">›</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Detailed form after choosing a subcategory
+  return (
+    <div className="form-container">
+      <button className="back-arrow" onClick={() => setSelectedSubcategory("")}>
+        ←
+      </button>
+      <form className="category-form" onSubmit={handleSubmit}>
+        <h3 className="form-heading">{selectedSubcategory} Details</h3>
+
+        {renderCommonFields()}
+
+        <label>Year *</label>
+        <input
+          type="number"
+          name="year"
+          placeholder="Enter Year"
+          value={formData.year || ""}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Condition *</label>
+        <select
+          name="condition"
+          value={formData.condition || ""}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Select Condition</option>
+          <option value="New">New</option>
+          <option value="Like New">Like New</option>
+          <option value="Used">Used</option>
+          <option value="Old">Old</option>
+        </select>
+
+        <h4>Upload up to 20 Photos</h4>
+        {renderPhotoGrid()}
+        <button type="submit" className="submit-btn">
+          Post Ad
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const renderPetsForm = () => {
+  return (
+    <div className="form-container">
+      <button className="back-arrow" onClick={() => setSelectedCategory(null)}>
+        ←
+      </button>
+      <form className="category-form" onSubmit={handleSubmit}>
+        <h3 className="form-heading">Pets Details</h3>
+
+        {renderCommonFields()}
+
+        <label>Year *</label>
+        <input
+          type="number"
+          name="year"
+          placeholder="Enter Year"
+          value={formData.year || ""}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Type *</label>
+        <select
+          name="type"
+          value={formData.type || ""}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Select Type</option>
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+          <option value="Bird">Bird</option>
+          <option value="Fish">Fish</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <h4>Upload up to 20 Photos</h4>
+        {renderPhotoGrid()}
+        <button type="submit" className="submit-btn">
+          Post Ad
+        </button>
+      </form>
+    </div>
+  );
+};
+
 
   // -------------------
   // Electronics Form
@@ -275,117 +462,153 @@ useEffect(() => {
     return (
       <form className="category-form" onSubmit={handleSubmit}>
         <h3 className="form-heading">{selectedSubcategory} Details</h3>
+
+        <label>Brand *</label>
+        <input
+          type="text"
+          name="brand"
+          placeholder="Enter Brand"
+          value={formData.brand || ""}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Model *</label>
+        <input
+          type="text"
+          name="model"
+          placeholder="Enter Model"
+          value={formData.model || ""}
+          onChange={handleChange}
+          required
+        />
+
+        <label>Year *</label>
+        <input
+          type="number"
+          name="year"
+          placeholder="Enter Year"
+          value={formData.year || ""}
+          onChange={handleChange}
+          required
+        />
+
         {renderCommonFields()}
+
         <h4>Upload up to 20 Photos</h4>
         {renderPhotoGrid()}
-        <button type="submit" className="submit-btn">Post Ad</button>
+        <button type="submit" className="submit-btn">
+          Post Ad
+        </button>
       </form>
     );
   };
 
+  // -------------------
+  // Mobile Form
+  // -------------------
+  const renderMobileForm = () => {
+    if (!selectedSubcategory) {
+      return (
+        <div className="form-container">
+          <button className="back-arrow" onClick={() => setSelectedCategory(null)}>
+            ←
+          </button>
+          <div className="subcategory-grid">
+            {mobileSubcategories.map((sub) => (
+              <div
+                key={sub}
+                className="subcategory-card"
+                onClick={() => setSelectedSubcategory(sub)}
+              >
+                <span className="subcategory-name">{sub}</span>
+                <span className="subcategory-arrow">›</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
 
-// -------------------
-// Mobile Form
-// -------------------
-const renderMobileForm = () => {
-  if (!selectedSubcategory) {
     return (
       <div className="form-container">
-        <button
-          className="back-arrow"
-          onClick={() => setSelectedCategory(null)}
-        >
+        <button className="back-arrow" onClick={() => setSelectedSubcategory("")}>
           ←
         </button>
-        <div className="subcategory-grid">
-          {mobileSubcategories.map((sub) => (
-            <div
-              key={sub}
-              className="subcategory-card"
-              onClick={() => setSelectedSubcategory(sub)}
-            >
-              <span className="subcategory-name">{sub}</span>
-              <span className="subcategory-arrow">›</span>
-            </div>
-          ))}
-        </div>
+        <form className="category-form" onSubmit={handleSubmit}>
+          <h3 className="form-heading">{selectedSubcategory} Details</h3>
+
+          {selectedSubcategory === "Mobile Phones" && (
+            <>
+              <input
+                type="text"
+                name="brand"
+                placeholder="Brand"
+                value={formData.brand || ""}
+                onChange={handleChange}
+                required
+              />
+
+              <label>Year *</label>
+              <input
+                type="number"
+                name="year"
+                placeholder="Enter Year"
+                value={formData.year || ""}
+                onChange={handleChange}
+                required
+              />
+            </>
+          )}
+
+          {selectedSubcategory === "Tablets" && (
+            <>
+              <label>Tablet Type *</label>
+              <div className="button-group">
+                {["Samsung", "iPad", "Other"].map((t) => (
+                  <button
+                    type="button"
+                    key={t}
+                    className={formData.tabletType === t ? "active" : ""}
+                    onClick={() => setFormData({ ...formData, tabletType: t })}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <label>Year *</label>
+              <input
+                type="number"
+                name="year"
+                placeholder="Enter Year"
+                value={formData.year || ""}
+                onChange={handleChange}
+                required
+              />
+            </>
+          )}
+
+          {renderCommonFields()}
+
+          <h4>Upload up to 20 Photos</h4>
+          {renderPhotoGrid()}
+          <button type="submit" className="submit-btn">
+            Post Ad
+          </button>
+        </form>
       </div>
     );
-  }
+  };
 
-  return (
-    <div className="form-container">
-      <button
-        className="back-arrow"
-        onClick={() => setSelectedSubcategory("")}
-      >
-        ←
-      </button>
-      <form className="category-form" onSubmit={handleSubmit}>
-        <h3 className="form-heading">{selectedSubcategory} Details</h3>
-
-        {selectedSubcategory === "Mobile Phones" && (
-          <>
-            {/* Only Brand Field */}
-            <input
-              type="text"
-              name="brand"
-              placeholder="Brand"
-              value={formData.brand || ""}
-              onChange={handleChange}
-              required
-            />
-
-             <label>Year *</label>
-            <input type="number" name="year" placeholder="Enter Year" value={formData.year || ""} onChange={handleChange} required />
-          </>
-        )}
-
-        {selectedSubcategory === "Tablets" && (
-          <>
-            <label>Tablet Type *</label>
-            <div className="button-group">
-              {["Samsung", "iPad", "Other"].map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  className={formData.tabletType === t ? "active" : ""}
-                  onClick={() =>
-                    setFormData({ ...formData, tabletType: t })
-                  }
-                >
-                  {t}
-                </button>
-                
-              ))}
-            </div>
-            <label>Year *</label>
-            <input type="number" name="year" placeholder="Enter Year" value={formData.year || ""} onChange={handleChange} required />
-          </>
-        )}
-
-        {/* Common Fields */}
-        {renderCommonFields()}
-
-        <h4>Upload up to 20 Photos</h4>
-        {renderPhotoGrid()}
-        <button type="submit" className="submit-btn">Post Ad</button>
-      </form>
-    </div>
-  );
-};
-
-// -------------------
-// Fashion Form
-// -------------------
-const renderFashionForm = () => {
+  // -------------------
+  // Fashion Form
+  // -------------------
+ const renderFashionForm = () => {
+  // First level: Men/Women/Kids
   if (!selectedSubcategory) {
     return (
       <div className="form-container">
-        <button
-          className="back-arrow"
-          onClick={() => setSelectedCategory(null)}
-        >
+        <button className="back-arrow" onClick={() => setSelectedCategory(null)}>
           ←
         </button>
         <div className="subcategory-grid">
@@ -404,50 +627,107 @@ const renderFashionForm = () => {
     );
   }
 
+  // Second level: Clothing / Accessories
+  if (selectedSubcategory && !formData.fashionType) {
+    return (
+      <div className="form-container">
+        <button className="back-arrow" onClick={() => setSelectedSubcategory("")}>
+          ←
+        </button>
+        <div className="subcategory-grid">
+          {fashionNestedSubcategories[selectedSubcategory].map((nested) => (
+            <div
+              key={nested}
+              className="subcategory-card"
+              onClick={() => setFormData({ ...formData, fashionType: nested })}
+            >
+              <span className="subcategory-name">{nested}</span>
+              <span className="subcategory-arrow">›</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Final form after Clothing / Accessories selection
   return (
     <div className="form-container">
       <button
         className="back-arrow"
-        onClick={() => setSelectedSubcategory("")}
+        onClick={() => setFormData({ ...formData, fashionType: "" })}
       >
         ←
       </button>
       <form className="category-form" onSubmit={handleSubmit}>
-        <h3 className="form-heading">{selectedSubcategory} - Fashion Details</h3>
+        <h3 className="form-heading">
+          {selectedSubcategory} - {formData.fashionType} Details
+        </h3>
 
-        {/* For now only common fields */}
         {renderCommonFields()}
+        
+
+  <label>Brand *</label>
+  <input
+    type="text"
+    name="brand"
+    placeholder="Enter Brand"
+    value={formData.brand || ""}
+    onChange={handleChange}
+    required
+  />
+
+  <label>Year *</label>
+  <input
+    type="number"
+    name="year"
+    placeholder="Enter Year"
+    value={formData.year || ""}
+    onChange={handleChange}
+    required
+  />
+
+  <label>Size *</label>
+  <input
+    type="text"
+    name="size"
+    placeholder="Enter Size"
+    value={formData.size || ""}
+    onChange={handleChange}
+    required
+  />
+
+
+  
 
         <h4>Upload up to 20 Photos</h4>
         {renderPhotoGrid()}
-        <button type="submit" className="submit-btn">Post Ad</button>
+        <button type="submit" className="submit-btn">
+          Post Ad
+        </button>
       </form>
     </div>
   );
 };
-
-
-
   // -------------------
   // Render Category Form
   // -------------------
   const renderForm = () => {
     const selectedCatObj = categories.find((cat) => cat.id === selectedCategory);
 
-    // Mobiles with subcategories
     if (selectedCategory === 2) return renderMobileForm();
     if (selectedCategory === 6) return renderFashionForm();
-    // Electronics with subcategories
     if (selectedCategory === 4) return renderElectronicsForm();
+    if (selectedCategory === 7) return renderBooksSportsHobbiesForm();
+    if (selectedCategory === 8) return renderPetsForm();
+
 
     return (
       <div className="form-container">
         <button
           className="back-arrow"
           onClick={() =>
-            selectedSubcategory
-              ? setSelectedSubcategory("")
-              : setSelectedCategory(null)
+            selectedSubcategory ? setSelectedSubcategory("") : setSelectedCategory(null)
           }
         >
           ←
@@ -456,10 +736,47 @@ const renderFashionForm = () => {
           <h3>Post an Ad for {selectedCatObj?.name}</h3>
           {renderCommonFields()}
           {/* Cars */}
+          {selectedCategory === 5 && (
+          <>
+            <label>Brand *</label>
+            <input
+              type="text"
+              name="brand"
+              placeholder="Enter Brand"
+              value={formData.brand || ""}
+              onChange={handleChange}
+              required
+            />
+            <label>Model *</label>
+            <input
+              type="text"
+              name="model"
+              placeholder="Enter Model"
+              value={formData.model || ""}
+              onChange={handleChange}
+              required
+            />
+            <label>Year *</label>
+            <input
+              type="number"
+              name="year"
+              placeholder="Enter Year"
+              value={formData.year || ""}
+              onChange={handleChange}
+              required
+            />
+          </>
+        )}
+
           {selectedCategory === 1 && (
             <>
               <label>Brand *</label>
-              <select name="brand" value={formData.brand || ""} onChange={handleChange} required>
+              <select
+                name="brand"
+                value={formData.brand || ""}
+                onChange={handleChange}
+                required
+              >
                 <option value="">Select Brand</option>
                 <option value="Maruti">Maruti</option>
                 <option value="Hyundai">Hyundai</option>
@@ -467,99 +784,137 @@ const renderFashionForm = () => {
                 <option value="Honda">Honda</option>
                 <option value="Mahindra">Mahindra</option>
               </select>
-              <label>Model *</label> 
-              <input type="text" name="model" placeholder="Model" value={formData.model || ""} onChange={handleChange} required />
+              <label>Model *</label>
+              <input
+                type="text"
+                name="model"
+                placeholder="Model"
+                value={formData.model || ""}
+                onChange={handleChange}
+                required
+              />
               <label>Year *</label>
-              <input type="number" name="year" placeholder="Enter Year" value={formData.year || ""} onChange={handleChange} required />
+              <input
+                type="number"
+                name="year"
+                placeholder="Enter Year"
+                value={formData.year || ""}
+                onChange={handleChange}
+                required
+              />
               <label>Fuel *</label>
               <div className="button-group">
                 {["Petrol", "Diesel", "CNG & Hybrids", "Electric", "LPG"].map((f) => (
-                  <button type="button" key={f} className={fuel === f ? "active" : ""} onClick={() => setFuel(f)}>{f}</button>
+                  <button
+                    type="button"
+                    key={f}
+                    className={fuel === f ? "active" : ""}
+                    onClick={() => setFuel(f)}
+                  >
+                    {f}
+                  </button>
                 ))}
               </div>
               <label>Transmission *</label>
               <div className="button-group">
                 {["Automatic", "Manual"].map((t) => (
-                  <button type="button" key={t} className={transmission === t ? "active" : ""} onClick={() => setTransmission(t)}>{t}</button>
+                  <button
+                    type="button"
+                    key={t}
+                    className={transmission === t ? "active" : ""}
+                    onClick={() => setTransmission(t)}
+                  >
+                    {t}
+                  </button>
                 ))}
               </div>
               <label>KM driven *</label>
-              <input type="number" name="kmDriven" placeholder="Enter KM Driven" value={formData.kmDriven || ""} onChange={handleChange} required />
+              <input
+                type="number"
+                name="kmDriven"
+                placeholder="Enter KM Driven"
+                value={formData.kmDriven || ""}
+                onChange={handleChange}
+                required
+              />
               <label>No. of Owners *</label>
               <div className="button-group">
                 {["1st", "2nd", "3rd", "4th", "4+"].map((o) => (
-                  <button type="button" key={o} className={owner === o ? "active" : ""} onClick={() => setOwner(o)}>{o}</button>
+                  <button
+                    type="button"
+                    key={o}
+                    className={owner === o ? "active" : ""}
+                    onClick={() => setOwner(o)}
+                  >
+                    {o}
+                  </button>
                 ))}
               </div>
             </>
           )}
           {/* Bikes */}
-{selectedCategory === 3 && (
-  <>
-    <label>Brand *</label>
-    <input
-      type="text"
-      name="brand"
-      placeholder="Enter Brand"
-      value={formData.brand || ""}
-      onChange={handleChange}
-      required
-    />
-    <label>Model *</label>
-    <input
-      type="text"
-      name="model"
-      placeholder="Enter Model"
-      value={formData.model || ""}
-      onChange={handleChange}
-      required
-    />
-     <label>Vehicle Type *</label>
-            <div className="button-group">
-              {["Petrol","EV"].map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  className={formData.vehicleType === t ? "active" : ""}
-                  onClick={() =>
-                    setFormData({ ...formData, vehicleType: t })
-                  }
-                >
-                  {t}
-                </button>
-                
-              ))}
-            </div>
-    <label>Year *</label>
-    <input
-      type="number"
-      name="year"
-      placeholder="Enter Year"
-      value={formData.year || ""}
-      onChange={handleChange}
-      required
-    />
-    <label>KM Driven *</label>
-    <input
-      type="number"
-      name="kmDriven"
-      placeholder="Enter KM Driven"
-      value={formData.kmDriven || ""}
-      onChange={handleChange}
-      required
-    />
-  </>
-)}
-
+          {selectedCategory === 3 && (
+            <>
+              <label>Brand *</label>
+              <input
+                type="text"
+                name="brand"
+                placeholder="Enter Brand"
+                value={formData.brand || ""}
+                onChange={handleChange}
+                required
+              />
+              <label>Model *</label>
+              <input
+                type="text"
+                name="model"
+                placeholder="Enter Model"
+                value={formData.model || ""}
+                onChange={handleChange}
+                required
+              />
+              <label>Vehicle Type *</label>
+              <div className="button-group">
+                {["Petrol", "EV"].map((t) => (
+                  <button
+                    type="button"
+                    key={t}
+                    className={formData.vehicleType === t ? "active" : ""}
+                    onClick={() => setFormData({ ...formData, vehicleType: t })}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <label>Year *</label>
+              <input
+                type="number"
+                name="year"
+                placeholder="Enter Year"
+                value={formData.year || ""}
+                onChange={handleChange}
+                required
+              />
+              <label>KM Driven *</label>
+              <input
+                type="number"
+                name="kmDriven"
+                placeholder="Enter KM Driven"
+                value={formData.kmDriven || ""}
+                onChange={handleChange}
+                required
+              />
+            </>
+          )}
 
           <h4>Upload up to 20 Photos</h4>
           {renderPhotoGrid()}
-          <button type="submit" className="submit-btn">Post Ad</button>
+          <button type="submit" className="submit-btn">
+            Post Ad
+          </button>
         </form>
       </div>
     );
-
-    
   };
 
   // -------------------
@@ -596,3 +951,4 @@ const renderFashionForm = () => {
     </div>
   );
 }
+//final

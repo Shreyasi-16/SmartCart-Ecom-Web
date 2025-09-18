@@ -196,20 +196,7 @@ const Profile = () => {
                 onChange={handleChange}
               />
 
-              <input
-                type="text"
-                name="city"
-                placeholder="City"
-                value={formData.city}
-                onChange={handleChange}
-              />
-              <input
-                type="text"
-                name="state"
-                placeholder="State"
-                value={formData.state}
-                onChange={handleChange}
-              />
+              
 
               <div className="location-toggle">
                 <label>
@@ -236,20 +223,53 @@ const Profile = () => {
 
               {formData.locationMode === "manual" && (
                 <>
-                  <input
-                    type="text"
-                    name="address"
-                    placeholder="Address"
-                    value={formData.manualLocation.address}
-                    onChange={handleManualLocationChange}
-                  />
-                  <input
-                    type="text"
-                    name="pincode"
-                    placeholder="Pincode"
-                    value={formData.manualLocation.pincode}
-                    onChange={handleManualLocationChange}
-                  />
+                 {formData.locationMode === "manual" && (
+  <>
+    <input
+      type="text"
+      name="city"
+      placeholder="City"
+      value={formData.city}
+      onChange={handleChange}
+    />
+    <input
+      type="text"
+      name="state"
+      placeholder="State"
+      value={formData.state}
+      onChange={handleChange}
+    />
+    <input
+      type="text"
+      name="address"
+      placeholder="Address"
+      value={formData.manualLocation.address}
+      onChange={handleManualLocationChange}
+    />
+    <input
+      type="text"
+      name="pincode"
+      placeholder="Pincode"
+      value={formData.manualLocation.pincode}
+      onChange={handleManualLocationChange}
+    />
+  </>
+)}
+
+{formData.locationMode === "gps" && (
+  <>
+    <button type="button" onClick={handleGetGPS}>
+      Get My GPS Location
+    </button>
+    {formData.gpsLocation.coordinates[0] !== 0 && (
+      <p>
+        Lat: {formData.gpsLocation.coordinates[1]}, Lng:{" "}
+        {formData.gpsLocation.coordinates[0]}
+      </p>
+    )}
+  </>
+)}
+
                 </>
               )}
 
