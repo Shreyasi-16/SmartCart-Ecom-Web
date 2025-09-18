@@ -12,7 +12,6 @@ import "./Login.css";
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-
 export function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -33,7 +32,7 @@ export function Login() {
       if (error.code === "auth/wrong-password") {
         alert("❌ Incorrect password.");
       } else if (error.code === "auth/user-not-found") {
-        alert("❌ User not found.");z
+        alert("❌ User not found.");
       } else {
         alert("Login Error: " + error.message);
       }

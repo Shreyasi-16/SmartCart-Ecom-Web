@@ -1,8 +1,8 @@
 :root {
-  --primary: #2b2b2b; /* dark black-grey */
-  --accent: #5a4632; /* warm brownish-black accent */
-  --light: #f8f4e3; /* cream */
-  --text: #2b2b2b;
+  --primary: #0f4c81;   /* deep navy */
+  --accent: #2D89EF;   /* bright blue */
+  --light: #f4f8fb;    /* soft light background */
+  --text: #1a1a1a;
   --danger: #dc3545;
   --success: #28a745;
 }
@@ -29,7 +29,7 @@ html, body {
 
 /* Card styling */
 .login-card {
-  background: var(--light);
+  background: #ffffff;
   padding: 2rem;
   border-radius: 16px;
   width: 100%;
@@ -81,7 +81,7 @@ html, body {
 
 .login-btn.primary {
   background: var(--accent);
-  color: var(--light);
+  color: #fff;
 }
 
 .login-btn.primary:hover {
