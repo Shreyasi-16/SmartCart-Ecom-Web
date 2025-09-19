@@ -9,6 +9,20 @@ function setCollection(collection) {
   productsCollection = collection;
 }
 
+// 🔹 Fetch ALL products
+router.get("/fetchProducts", async (req, res) => {
+  try {
+    if (!productsCollection) {
+      return res.status(500).json({ message: "Collection not set" });
+    }
+
+    const products = await productsCollection.find().toArray();
+    res.status(200).json(products);
+  } catch (err) {
+    console.error("❌ Error fetching products:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 // SEARCH products with Atlas Search autocomplete
 router.get("/search", async (req, res) => {
   try {
@@ -20,8 +34,8 @@ router.get("/search", async (req, res) => {
           index: "search_index",
           compound: {
             should: [
-              { autocomplete: { query, path: "name", fuzzy: { maxEdits: 1 } } },
-              { autocomplete: { query, path: "sub_category", fuzzy: { maxEdits: 1 } } }
+              { autocomplete: { query, path: "title", fuzzy: { maxEdits: 1 } } },
+              { autocomplete: { query, path: "description", fuzzy: { maxEdits: 1 } } }
             ],
             minimumShouldMatch: 1
           }
@@ -31,7 +45,8 @@ router.get("/search", async (req, res) => {
     ];
 
     const results = await productsCollection.aggregate(aggregationPipeline).toArray();
-    res.status(200).json({ data: results });
+   res.status(200).json(results);
+
   } catch (err) {
     console.error('❌ Error during search:', err);
     res.status(500).json({ message: "Internal Server Error" });

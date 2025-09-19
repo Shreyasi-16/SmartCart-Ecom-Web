@@ -8,7 +8,7 @@ require("dotenv").config();
 const userRoutes = require("./routes/userRoutes");
 const { router: productRoutes, setCollection } = require("./routes/productRoutes");
 const sellRoutes = require("./routes/sellRoutes");
-const updateProfile = require("./routes/updateProfile"); 
+const updateProfile = require("./routes/updateProfile");  
 const app = express();
 
 app.use(cors());
@@ -19,6 +19,7 @@ app.use(userRoutes);
 app.use("/products", productRoutes);
 app.use("/api/sell", sellRoutes);
 app.use("/api/users", updateProfile);
+
 
 app.get("/", (req, res) => {
   res.send("🚀 Backend is running!");
@@ -34,7 +35,7 @@ async function startServer() {
     console.log("✅ MongoClient connected (for Atlas Search)");
 
     const db = client.db("SmartCart");
-    setCollection(db.collection("products_v1")); // ✅ pass collection to routes
+    setCollection(db.collection("products")); // ✅ pass collection to routes
 
     // Connect Mongoose (for models if needed)
     await mongoose.connect(mongoUri);

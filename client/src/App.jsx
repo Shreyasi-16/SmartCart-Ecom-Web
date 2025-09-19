@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import "@fontsource/poppins"; // Defaults to weight 400
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Home } from './pages/Home.jsx';
-import { Product } from './pages/Product.jsx';
+import Product from './pages/Product.jsx';
 import ProductPage from './pages/ProductPage.jsx'; 
 import { Contact } from './pages/Contact.jsx';
 import { Cart } from './pages/Cart.jsx';

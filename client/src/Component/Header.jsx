@@ -27,11 +27,14 @@ export function Header() {
     const timer = setTimeout(() => {
       if (query.length > 1) {
         fetch(`http://localhost:5000/products/search?query=${query}`)
+        
           .then((res) => res.json())
-          .then((data) => {
-            console.log("Search results:", data.data);
-            setResults(data.data);
-          })
+.then((data) => {
+  console.log("Search results:", data);
+  setResults(data);
+})
+
+          
           .catch((err) => console.error("Error fetching data:", err));
       } else {
         setResults([]);
@@ -116,10 +119,10 @@ export function Header() {
                       }
                     >
                       {/* Product Image with fallback */}
-                      {item.image ? (
+                      {item.photos[0] ? (
                         <img
-                          src={item.image}
-                          alt={item.name || "Product"}
+                          src={item.photos[0]}
+                          alt={item.title || "Product"}
                           style={{
                             width: "40px",
                             height: "40px",
@@ -147,7 +150,7 @@ export function Header() {
                       {/* Product Name */}
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <span style={{ fontWeight: 500, fontSize: "0.95rem" }}>
-                          {item.name || "No Name"}
+                          {item.title || "No Name"}
                         </span>
                       </div>
                     </li>
