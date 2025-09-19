@@ -3,18 +3,19 @@
   text-align: center;
   padding: 50px;
   min-height: 100vh;
+  background-color: var(--bg); /* cream background */
 }
 
 .profile-heading {
   font-size: 28px;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--primary); /* navy heading */
 }
 
 .profile-email {
   font-size: 16px;
   margin-bottom: 30px;
-  color: #555;
+  color: var(--text); /* dark text */
 }
 
 .profile-image-container {
@@ -28,35 +29,69 @@
   height: 140px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #007bff;
+  border: 4px solid var(--primary); /* navy border */
 }
 
+/* File Upload Button */
 .custom-file-upload {
   display: inline-block;
   padding: 10px 20px;
   margin-top: 10px;
   cursor: pointer;
-  background-color: #007bff;
-  color: white;
+  background-color: var(--primary); /* navy */
+  color: var(--light);
   border-radius: 5px;
   font-size: 14px;
   transition: background-color 0.3s ease;
 }
 
 .custom-file-upload:hover {
-  background-color: #0056b3;
+  background-color: #040b17;
 }
 
 .custom-file-upload input[type="file"] {
   display: none;
 }
 
+/* Buttons (common style) */
+.btn-custom {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 10px 15px;
+  margin-top: 8px;
+}
+
+/* Update Profile button */
+.btn-custom.btn-primary {
+  background-color: #002954;
+  border: none;        
+  color: var(--light);
+}
+
+.btn-custom.btn-primary:hover {
+  background-color: #004690; 
+  border: none;              
+}
+
+/* Save Photo button hover */
+.btn-custom.btn-success:hover {
+  background-color: #1e7e34 !important;
+  border-color: #155724 !important;
+}
+
+/* Logout button hover */
+.btn-custom.btn-danger:hover {
+  background-color: #bd2130 !important;
+  border-color: #941b25 !important;
+}
+
+/* Upload Submit Button */
 .upload-button {
   display: inline-block;
   margin-top: 15px;
   padding: 8px 20px;
-  background-color: #28a745;
-  color: white;
+  background-color: var(--success); /* green */
+  color: var(--light);
   border: none;
   font-size: 14px;
   border-radius: 5px;
@@ -65,11 +100,47 @@
 }
 
 .upload-button:hover {
-  background-color: #1e7e34;
+  background-color: #218838; /* darker green */
 }
 
+/* Not Logged In */
 .not-logged-in {
-  color: red;
+  color: var(--danger);
   font-weight: bold;
   margin-top: 100px;
+}
+
+/* Profile page container */
+.profile-page {
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Profile image hover */
+.col-md-4 img {
+  border: 4px solid #dee2e6;
+  transition: transform 0.2s ease;
+}
+
+.col-md-4 img:hover {
+  transform: scale(1.05);
+}
+
+/* Form controls */
+form .form-control {
+  border-radius: 8px;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+/* Responsive fix */
+@media (max-width: 768px) {
+  .col-md-4,
+  .col-md-8 {
+    margin-bottom: 20px;
+  }
 }

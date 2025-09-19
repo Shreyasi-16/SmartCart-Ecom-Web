@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged, updateProfile, signOut } from "firebase/auth";
-import "./Profile.css";
+import {
+  getAuth,
+  onAuthStateChanged,
+  updateProfile,
+  signOut,
+} from "firebase/auth";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./Profile.css"; // make sure CSS is imported
 
 const Profile = () => {
   const auth = getAuth();
@@ -8,6 +14,8 @@ const Profile = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -19,7 +27,6 @@ const Profile = () => {
     gpsLocation: { type: "Point", coordinates: [0, 0] },
   });
 
-  // ✅ Load user from Firebase + backend
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -40,8 +47,10 @@ const Profile = () => {
               city: data.city || "",
               state: data.state || "",
               locationMode: data.locationMode || "manual",
-              manualLocation: data.manualLocation || { address: "", pincode: "" },
-              gpsLocation: data.gpsLocation || { type: "Point", coordinates: [0, 0] },
+              manualLocation:
+                data.manualLocation || { address: "", pincode: "" },
+              gpsLocation:
+                data.gpsLocation || { type: "Point", coordinates: [0, 0] },
             }));
           })
           .catch((err) => console.error("Error fetching user data:", err));
@@ -51,7 +60,14 @@ const Profile = () => {
     return () => unsubscribe();
   }, [auth]);
 
-  // ✅ Handle image upload
+  // Hide message after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -64,14 +80,14 @@ const Profile = () => {
     if (!selectedImage || !user) return;
     try {
       await updateProfile(user, { photoURL: preview });
-      alert("Profile photo updated (locally).");
+      setMessage("Profile image saved successfully!");
+      setSelectedImage(null);
     } catch (err) {
       console.error(err);
-      alert("Failed to update photo.");
+      setMessage("Failed to update photo.");
     }
   };
 
-  // ✅ Logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -84,17 +100,17 @@ const Profile = () => {
     }
   };
 
-  // ✅ Form handlers
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
-  const handleManualLocationChange = (e) => {
+  const handleManualLocationChange = (e) =>
     setFormData({
       ...formData,
-      manualLocation: { ...formData.manualLocation, [e.target.name]: e.target.value },
+      manualLocation: {
+        ...formData.manualLocation,
+        [e.target.name]: e.target.value,
+      },
     });
-  };
 
   const handleGetGPS = () => {
     if (!navigator.geolocation) {
@@ -133,172 +149,220 @@ const Profile = () => {
 
       const data = await res.json();
       if (res.ok) {
-        alert("Profile updated and synced with database!");
+        setMessage("Profile updated successfully!");
         setShowForm(false);
       } else {
         console.error("Failed to update profile:", data.message);
-        alert("Failed to update profile.");
+        setMessage("Failed to update profile.");
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating profile.");
+      setMessage("Error updating profile.");
     }
   };
 
-  // ✅ UI
   return (
-    <div className="profile-container">
+    <div className="container mt-4 profile-page">
       {user ? (
-        <>
-          <h1 className="profile-heading">Welcome, {user.displayName || "User"}</h1>
-          <p className="profile-email">Email: {user.email}</p>
-
-          <div className="profile-image-container">
+        <div className="row">
+          {/* LEFT SIDE */}
+          <div className="col-md-4 text-center border-end">
             <img
               src={preview || "https://via.placeholder.com/150"}
               alt="Profile"
-              className="profile-image"
+              className="img-fluid rounded-circle mb-3"
+              style={{ width: "150px", height: "150px", objectFit: "cover" }}
             />
+
+            <div className="mb-3">
+              <input
+                type="file"
+                id="fileUpload"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+              <label
+                htmlFor="fileUpload"
+                className="btn btn-custom btn-outline-primary w-100"
+              >
+                Upload New Photo
+              </label>
+              {selectedImage && (
+                <button
+                  className="btn btn-custom btn-success mt-2 w-100"
+                  onClick={handleUpload}
+                >
+                  Save Photo
+                </button>
+              )}
+            </div>
+
+            <button
+              className="btn btn-custom btn-primary w-100 mb-2"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm ? "Cancel" : "Update Profile"}
+            </button>
+
+            <button
+              className="btn btn-custom btn-danger w-100"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
 
-          <label className="custom-file-upload">
-            Upload New Photo
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-          </label>
-          <button className="upload-button" onClick={handleUpload}>
-            Save Photo
-          </button>
+          {/* RIGHT SIDE */}
+          <div className="col-md-8 ps-4">
+            <h2>Welcome, {user.displayName || "User"}</h2>
+            <p>Email: {user.email}</p>
 
-          <button className="update-button" onClick={() => setShowForm(!showForm)}>
-            {showForm ? "Cancel" : "Update Profile"}
-          </button>
+            {message && <div className="alert alert-info mt-3">{message}</div>}
 
-          {showForm && (
-            <form className="update-form" onSubmit={handleUpdateProfile}>
-              <input
-                type="text"
-                name="name"
-                placeholder="Enter your name"
-                value={formData.name}
-                onChange={handleChange}
-              />
-              <input
-                type="text"
-                name="phone"
-                placeholder="Enter phone number"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-              <textarea
-                name="aboutMe"
-                placeholder="About me..."
-                value={formData.aboutMe}
-                onChange={handleChange}
-              />
-
-              
-
-              <div className="location-toggle">
-                <label>
+            {showForm && (
+              <form className="mt-4" onSubmit={handleUpdateProfile}>
+                <div className="mb-3">
                   <input
-                    type="radio"
-                    checked={formData.locationMode === "manual"}
-                    onChange={() =>
-                      setFormData({ ...formData, locationMode: "manual" })
-                    }
+                    type="text"
+                    name="name"
+                    className="form-control"
+                    placeholder="Enter your name"
+                    value={formData.name}
+                    onChange={handleChange}
                   />
-                  Manual
-                </label>
-                <label>
+                </div>
+
+                <div className="mb-3">
                   <input
-                    type="radio"
-                    checked={formData.locationMode === "gps"}
-                    onChange={() =>
-                      setFormData({ ...formData, locationMode: "gps" })
-                    }
+                    type="text"
+                    name="phone"
+                    className="form-control"
+                    placeholder="Enter phone number"
+                    value={formData.phone}
+                    onChange={handleChange}
                   />
-                  GPS
-                </label>
-              </div>
+                </div>
 
-              {formData.locationMode === "manual" && (
-                <>
-                 {formData.locationMode === "manual" && (
-  <>
-    <input
-      type="text"
-      name="city"
-      placeholder="City"
-      value={formData.city}
-      onChange={handleChange}
-    />
-    <input
-      type="text"
-      name="state"
-      placeholder="State"
-      value={formData.state}
-      onChange={handleChange}
-    />
-    <input
-      type="text"
-      name="address"
-      placeholder="Address"
-      value={formData.manualLocation.address}
-      onChange={handleManualLocationChange}
-    />
-    <input
-      type="text"
-      name="pincode"
-      placeholder="Pincode"
-      value={formData.manualLocation.pincode}
-      onChange={handleManualLocationChange}
-    />
-  </>
-)}
+                <div className="mb-3">
+                  <textarea
+                    name="aboutMe"
+                    className="form-control"
+                    placeholder="About me..."
+                    value={formData.aboutMe}
+                    onChange={handleChange}
+                  />
+                </div>
 
-{formData.locationMode === "gps" && (
-  <>
-    <button type="button" onClick={handleGetGPS}>
-      Get My GPS Location
-    </button>
-    {formData.gpsLocation.coordinates[0] !== 0 && (
-      <p>
-        Lat: {formData.gpsLocation.coordinates[1]}, Lng:{" "}
-        {formData.gpsLocation.coordinates[0]}
-      </p>
-    )}
-  </>
-)}
+                {/* City & State */}
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <input
+                      type="text"
+                      name="city"
+                      className="form-control"
+                      placeholder="City"
+                      value={formData.city}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <input
+                      type="text"
+                      name="state"
+                      className="form-control"
+                      placeholder="State"
+                      value={formData.state}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
 
-                </>
-              )}
+                {/* Location Mode Switch */}
+                <div className="mb-3">
+                  <div className="form-check form-check-inline">
+                    <input
+                      type="radio"
+                      className="form-check-input"
+                      checked={formData.locationMode === "manual"}
+                      onChange={() =>
+                        setFormData({ ...formData, locationMode: "manual" })
+                      }
+                    />
+                    <label className="form-check-label">Manual</label>
+                  </div>
+                  <div className="form-check form-check-inline">
+                    <input
+                      type="radio"
+                      className="form-check-input"
+                      checked={formData.locationMode === "gps"}
+                      onChange={() =>
+                        setFormData({ ...formData, locationMode: "gps" })
+                      }
+                    />
+                    <label className="form-check-label">GPS</label>
+                  </div>
+                </div>
 
-              {formData.locationMode === "gps" && (
-                <>
-                  <button type="button" onClick={handleGetGPS}>
-                    Get My GPS Location
+                {/* Manual fields */}
+                {formData.locationMode === "manual" && (
+                  <>
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        name="address"
+                        className="form-control"
+                        placeholder="Address"
+                        value={formData.manualLocation.address}
+                        onChange={handleManualLocationChange}
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        name="pincode"
+                        className="form-control"
+                        placeholder="Pincode"
+                        value={formData.manualLocation.pincode}
+                        onChange={handleManualLocationChange}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* GPS fields */}
+                {formData.locationMode === "gps" && (
+                  <>
+                    <div className="mb-3">
+                      <button
+                        type="button"
+                        className="btn btn-warning"
+                        onClick={handleGetGPS}
+                      >
+                        Get My GPS Location
+                      </button>
+                    </div>
+                    {formData.gpsLocation.coordinates[0] !== 0 && (
+                      <p>
+                        Lat: {formData.gpsLocation.coordinates[1]}, Lng:{" "}
+                        {formData.gpsLocation.coordinates[0]}
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {/* Save button in new line */}
+                <div className="mt-3">
+                  <button type="submit" className="btn btn-success w-100">
+                    Save Changes
                   </button>
-                  {formData.gpsLocation.coordinates[0] !== 0 && (
-                    <p>
-                      Lat: {formData.gpsLocation.coordinates[1]}, Lng:{" "}
-                      {formData.gpsLocation.coordinates[0]}
-                    </p>
-                  )}
-                </>
-              )}
-
-              <button type="submit" className="save-button">
-                Save Changes
-              </button>
-            </form>
-          )}
-
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
-        </>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       ) : (
-        <p className="not-logged-in">You are not logged in.</p>
+        <p className="text-center">You are not logged in.</p>
       )}
     </div>
   );
