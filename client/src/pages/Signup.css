@@ -1,137 +1,169 @@
-/* Signup.css */
-
-/* Center page */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Playwrite+AU+QLD:wght@100..400&family=Tagesschrift&display=swap');
 .signup-page {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f9fafb;
+
+  /* Animated gradient background */
+  background: linear-gradient(-45deg, #efecf3, #eaf0fb, #fcf8f5, #acbdfe);
+  background-size: 400% 400%;
+  animation: gradientFlow 12s ease infinite;
 }
 
-/* Card container */
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .signup-card {
   display: flex;
-  background: #fff;
+  width: 1000px;
+  height: 550px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  max-width: 900px;
-  width: 100%;
+  box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+  background: white;
+  
 }
 
-/* Left side form */
+/* Left side with image */
 .signup-left {
   flex: 1;
-  padding: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #eef3ff;
+  width: 600px;
+}
+
+.signup-left img {
+  width: 600px;
+  height: 100%;
+ 
+}
+
+/* Right side form */
+.signup-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  width: 400px;
 }
 
 .signup-form {
   width: 100%;
   max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.signup-form h2 {
-  font-size: 28px;
+.signup-title {
+  text-align: center;
   margin-bottom: 20px;
-  font-weight: 700;
-  text-align: left;
+  font-size: 26px;
+  color: #ff6600;
+  font-weight: 900;
+  font-family: "Tagesschrift", system-ui;
+}
+.signin-text{
+  color: #030656;
+  font-weight: bolder;
+}
+.signin-text a {
+  color: #ff6600;
 }
 
-/* Input group with icon */
+/* Input Groups */
 .input-group {
   display: flex;
   align-items: center;
-  margin-bottom: 18px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 8px 12px;
-  background: #fafafa;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 15px;
+  transition: 0.3s;
 }
 
-.input-group .icon {
+.input-group:focus-within {
+  border-color: #f6b53b;
+  box-shadow: 0 0 0 4px rgba(245, 161, 51, 0.1);
+}
+
+.icon {
   margin-right: 10px;
   font-size: 18px;
+  color: #6b7280;
 }
 
 .input-group input {
   border: none;
   outline: none;
   flex: 1;
-  background: transparent;
   font-size: 15px;
+  background: transparent;
+  color: #111827;
 }
 
-/* Checkbox */
-.checkbox-group {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  margin: 15px 0;
-}
 
-.checkbox-group input {
-  margin-right: 8px;
-}
-
-.checkbox-group a {
-  color: #2563eb;
-  text-decoration: none;
-}
-
-.checkbox-group a:hover {
-  text-decoration: underline;
-}
-
-/* Buttons */
-.register-btn {
-  width: 100%;
+.register-btn, .google-btn {
   padding: 12px;
-  background: #2563eb;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
   border: none;
   border-radius: 6px;
-  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: 0.3s;
+}
+
+.register-btn {
+  background: #0b1d39;
+  color: white;
+  font-weight: bolder;
 }
 
 .register-btn:hover {
-  background: #1e4ed8;
+  background: #ff6600;
 }
 
 .google-btn {
-  width: 100%;
-  padding: 12px;
-  background: #db4437;
-  color: white;
-  font-size: 15px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
+  background: #ece6e6;
+  border: 1px solid #ddd;
+  color: #ff6600;
+  font-weight: bolder;
 }
 
 .google-btn:hover {
-  background: #c1351d;
+   background: #0b1d39;
+  color: white;
 }
 
-/* Right side image */
-.signup-right {
-  flex: 1;
-  background: #f3f4f6;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 30px;
-}
+/* ✅ Responsive for mobile */
+@media (max-width: 768px) {
+  .signup-card {
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+  }
 
-.signup-right img {
-  max-width: 100%;
-  height: auto;
+  .signup-left, .signup-right {
+    flex: none;
+    width: 100%;
+    height: auto;
+  }
+
+  .signup-left img {
+    height: 250px;
+    object-fit: cover;
+  }
 }

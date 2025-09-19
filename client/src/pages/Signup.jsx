@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import app from "../firebase";
 import "./Signup.css";
+import { FcGoogle } from "react-icons/fc"; // Google official color icon
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
@@ -15,7 +16,6 @@ const googleProvider = new GoogleAuthProvider();
 const syncUserToMongo = async (user) => {
   try {
     const idToken = await user.getIdToken();
-
     const response = await fetch("http://localhost:5000/sync-user", {
       method: "POST",
       headers: {
@@ -25,7 +25,6 @@ const syncUserToMongo = async (user) => {
     });
 
     if (!response.ok) throw new Error("Failed to sync user");
-
     console.log("✅ User synced to MongoDB");
   } catch (error) {
     console.error("❌ Sync Error:", error.message);
@@ -40,37 +39,22 @@ export function Signup() {
 
   const handleEmailSignup = async (e) => {
     e.preventDefault();
-
-    if (!fullName || !email || !pass || !confirmPass) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    if (pass !== confirmPass) {
-      alert("Passwords do not match.");
-      return;
-    }
+    if (!fullName || !email || !pass || !confirmPass) return alert("Please fill all fields.");
+    if (pass !== confirmPass) return alert("Passwords do not match.");
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      const user = userCredential.user;
-
-      await updateProfile(user, { displayName: fullName });
-
-      await syncUserToMongo(user);
-
+      await updateProfile(userCredential.user, { displayName: fullName });
+      await syncUserToMongo(userCredential.user);
       alert("Signup successful!");
       window.location.href = "/login";
     } catch (error) {
-      if (error.code === "auth/email-already-in-use") {
-        alert("This email is already registered.");
-      } else if (error.code === "auth/weak-password") {
-        alert("Password should be at least 6 characters.");
-      } else if (error.code === "auth/invalid-email") {
-        alert("Please enter a valid email address.");
-      } else {
-        alert("Signup Error: " + error.message);
-      }
+      const messages = {
+        "auth/email-already-in-use": "This email is already registered.",
+        "auth/weak-password": "Password should be at least 6 characters.",
+        "auth/invalid-email": "Please enter a valid email address.",
+      };
+      alert(messages[error.code] || "Signup Error: " + error.message);
     }
   };
 
@@ -78,11 +62,8 @@ export function Signup() {
     e.preventDefault();
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      await syncUserToMongo(user);
-
-      alert("Signed up with Google: " + user.email);
+      await syncUserToMongo(result.user);
+      alert("Signed up with Google: " + result.user.email);
       window.location.href = "/Profile";
     } catch (error) {
       alert("Google Signup Error: " + error.message);
@@ -90,80 +71,54 @@ export function Signup() {
     }
   };
 
-  return (
-    <div className="signup-page">
-      <div className="signup-card">
-        <div className="signup-left">
-          <form className="signup-form" onSubmit={handleEmailSignup}>
-            <h2>Sign up</h2>
+ return (
+  <div className="signup-page">
+    <div className="signup-card">
+      {/* LEFT: Image / Animation */}
+      <div className="signup-left">
+        <img src="s-bg.png" alt="signup-bg" />
+      </div>
 
-            <div className="input-group">
-              <span className="icon">👤</span>
+      {/* RIGHT: Signup Form */}
+      <div className="signup-right">
+        <form className="signup-form" onSubmit={handleEmailSignup}>
+          <h2 className="signup-title">Create Account</h2>
+
+          {[
+            { placeholder: "Your Name", value: fullName, setter: setFullName, icon: "👤", type: "text" },
+            { placeholder: "Your Email", value: email, setter: setEmail, icon: "📧", type: "email" },
+            { placeholder: "Password", value: pass, setter: setPass, icon: "🔒", type: "password" },
+            { placeholder: "Repeat Password", value: confirmPass, setter: setConfirmPass, icon: "🔑", type: "password" },
+          ].map((field, idx) => (
+            <div className="input-group" key={idx}>
+              <span className="icon">{field.icon}</span>
               <input
-                type="text"
-                placeholder="Your Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                type={field.type}
+                placeholder={field.placeholder}
+                value={field.value}
+                onChange={(e) => field.setter(e.target.value)}
                 required
               />
             </div>
+          ))}
 
-            <div className="input-group">
-              <span className="icon">📧</span>
-              <input
-                type="email"
-                placeholder="Your Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+          <button type="submit" className="register-btn">
+            REGISTER
+          </button>
+          <button type="button" className="google-btn" onClick={handleGoogleSignup}>
+            <FcGoogle size={20} style={{ marginRight: "8px" }} />
+            Sign Up with Google
+          </button>
 
-            <div className="input-group">
-              <span className="icon">🔒</span>
-              <input
-                type="password"
-                placeholder="Password"
-                value={pass}
-                onChange={(e) => setPass(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="input-group">
-              <span className="icon">🔑</span>
-              <input
-                type="password"
-                placeholder="Repeat your password"
-                value={confirmPass}
-                onChange={(e) => setConfirmPass(e.target.value)}
-                required
-              />
-            </div>
-
-        
-
-            <button type="submit" className="register-btn">
-              REGISTER
-            </button>
-
-            <button
-              type="button"
-              className="google-btn"
-              onClick={handleGoogleSignup}
-            >
-              Sign Up with Google
-            </button>
-          </form>
-        </div>
-
-        <div className="signup-right">
-          <img
-            src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-registration/draw1.webp"
-            alt="signup illustration"
-          />
-        </div>
+          {/* New line at bottom */}
+          <p className="signin-text">
+            Already have an account? <a href="/login">Sign In</a>
+          </p>
+        </form>
       </div>
     </div>
-  );
+  </div>
+);
+
+
 }
