@@ -7,7 +7,7 @@ const router = express.Router();
 // POST /api/sell
 router.post("/", async (req, res) => {
   try {
-    const { title, description, price, state, city, categoryId, attributes, photos, seller } = req.body;
+    const { title, description, price, state, city, categoryId, attributes, photos, seller,locationMode,gpsLocation,manualLocation } = req.body;
 
     if (!title || !categoryId) {
       return res.status(400).json({ error: "Title and category are required" });
@@ -28,7 +28,10 @@ router.post("/", async (req, res) => {
       categoryId,
       attributes,
       photos,
-      seller: user._id, // store ObjectId reference
+      seller: user._id, 
+      locationMode,
+      gpsLocation,
+      manualLocation,// store ObjectId reference
     });
 
     await newProduct.save();

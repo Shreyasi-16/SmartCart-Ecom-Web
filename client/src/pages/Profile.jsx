@@ -60,6 +60,7 @@ const Profile = () => {
     return () => unsubscribe();
   }, [auth]);
 
+  
   // Hide message after 5 seconds
   useEffect(() => {
     if (message) {
