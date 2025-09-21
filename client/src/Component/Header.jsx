@@ -61,6 +61,7 @@ export function Header() {
             <img src="logo-transparent-png.png" height="100%" width="100%" alt="SmartCart Logo" />
           </NavLink>
 
+
           {/* Search Bar */}
           <div className="search-bar">
             <div className="search-wrapper" style={{ position: "relative" }}>
@@ -186,9 +187,9 @@ export function Header() {
 
         {/* Row 2 */}
         <div className="nav-links">
-          <div className="category-dropdown">
+          {/* <div className="category-dropdown">
             <DropDownMenu />
-          </div>
+          </div> */}
 
           <div className="nav-center">
             <NavLink to="/" className="nav-link">
@@ -202,6 +203,12 @@ export function Header() {
             </NavLink>
             <NavLink to="/wishlist" className="nav-link d-flex align-items-center gap-1">
               <FaHeart /> Wishlist
+            </NavLink>
+            <NavLink to="/aboutus" className="nav-link">
+              About us
+            </NavLink>
+            <NavLink to="/contact" className="nav-link">
+              Contact
             </NavLink>
           </div>
         </div>

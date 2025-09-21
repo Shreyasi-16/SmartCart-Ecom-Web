@@ -38,7 +38,7 @@
 
 .search-wrapper {
   width: 100%;
-  max-width: 500px;
+  max-width: 900px;
   display: flex;
   align-items: center;
   background: rgb(158, 164, 200);
@@ -113,9 +113,10 @@
 
 /* Category Dropdown alignment in Row 2 */
 .category-dropdown {
-  margin-right: 20px;
+  margin-left: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 
@@ -156,5 +157,5 @@
 
 /* Spacer */
 .header-spacer {
-  height: 106px; /* offset for fixed header */
+  height: 101px; /* offset for fixed header */
 }
