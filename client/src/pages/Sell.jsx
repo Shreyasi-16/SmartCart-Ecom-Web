@@ -422,8 +422,8 @@ if (selectedCategory === 6) {
 const productData = { 
   title: title || "", 
   description: description || "", 
-  price: price || "", 
-  categoryId: String(categoryId ?? ""), 
+  price: price ?? 0, 
+  categoryId: categoryId ?? 0 , 
   photos: photos.filter((p) => p !== null), 
   attributes, 
   seller: userId, 

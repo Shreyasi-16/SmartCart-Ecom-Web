@@ -9,20 +9,37 @@ function setCollection(collection) {
   productsCollection = collection;
 }
 
-// 🔹 Fetch ALL products
 router.get("/fetchProducts", async (req, res) => {
   try {
     if (!productsCollection) {
       return res.status(500).json({ message: "Collection not set" });
     }
 
-    const products = await productsCollection.find().toArray();
+    let { categoryId, price } = req.query;
+    let filter = {};
+
+    // Convert categoryId from string to number
+    if (categoryId) {
+      categoryId = Number(categoryId);
+      filter.categoryId = categoryId;  // ✅ now matches number type in DB
+    }
+
+    // Apply price filter (optional)
+    if (price) {
+      filter.price = { $lte: Number(price) };
+    }
+
+    console.log("👉 Filter being applied:", filter); // debug
+
+    const products = await productsCollection.find(filter).toArray();
     res.status(200).json(products);
   } catch (err) {
     console.error("❌ Error fetching products:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+
 // SEARCH products with Atlas Search autocomplete
 router.get("/search", async (req, res) => {
   try {

@@ -9,32 +9,10 @@ export default function Product() {
   const [error, setError] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [activeSubcategoryId, setActiveSubcategoryId] = useState(null); 
   const [selectedFilter, setSelectedFilter] = useState("Latest Products");
   const [price, setPrice] = useState(5000); // default ₹5000
   const [selectedSizes, setSelectedSizes] = useState([]); // empty initially
-
-//PRODUCT FILTERS
-const productFilters = (category, subcategory = null) => {
-  setLoading(true);
-  let url = `http://localhost:5000/products/fetchProducts?category=${category}`;
-  if (subcategory) url += `&subcategory=${subcategory}`;
-  if (price) url += `&price=${price}`;
-  if (selectedSizes.length > 0) url += `&sizes=${selectedSizes.join(",")}`;
-
-  fetch(url)
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch products");
-      return res.json();
-    })
-    .then((data) => {
-      setProducts(data);
-      setLoading(false);
-    })
-    .catch((err) => {
-      setError(err.message);
-      setLoading(false);
-    });
-};
 
   useEffect(() => {
     fetch("http://localhost:5000/products/fetchProducts")
@@ -54,40 +32,75 @@ const productFilters = (category, subcategory = null) => {
       });
   }, []);
 
+  useEffect(() => {
+    // If a subcategory is active, refetch that
+    if (activeSubcategoryId) {
+      fetchProductsByCategory(activeSubcategoryId);
+    }
+    // Otherwise, refetch the main category if it has an ID
+    else if (openCategory) {
+      const { id } = categories[openCategory];
+      if (id) fetchProductsByCategory(Number(id));
+    }
+  }, [price]); // runs whenever price changes
+
+
   // ✅ Keep your categories
-  const categories = {
-    Fashion: ["Men", "Women", "Kids", "Accessories"],
-    "Books, Sports & Hobbies": [
-      "Books",
-      "Musical Instruments",
-      "Sports Equipment",
-      "Gym & Fitness",
-      "Board Games",
+  const categories =  {
+  Cars: { id: "1", subcats: [] },
+  "Mobile Phones": { id: "201", subcats: [] },
+  Tablets: { id: "202", subcats: [] },
+  "Two-Wheelers": { id: "3", subcats: [] },
+  TVs: { id: "401", subcats: [] },
+  Laptops: { id: "402", subcats: [] },
+  Cameras: { id: "403", subcats: [] },
+  Fridges: { id: "405", subcats: [] },
+  "Washing Machines": { id: "406", subcats: [] },
+  "Furniture & Decor": { id: "5", subcats: [] },
+  Pets: { id: "8", subcats: [] },
+
+  Fashion: {
+    id: null, // handled by subcategories
+    subcats: [
+      { name: "Women Clothing", id: "601" },
+      { name: "Women Accessories", id: "602" },
+      { name: "Men Clothing", id: "603" },
+      { name: "Men Accessories", id: "604" },
+      { name: "Kids Clothing", id: "605" },
+      { name: "Kids Accessories", id: "606" },
     ],
-    "Electronics & Appliances": [
-      "TVs, Video - Audio",
-      "Kitchen & Other Appliances",
-      "Computers & Laptops",
-      "Cameras & Lenses",
-      "Games & Entertainment",
-      "Fridges",
-      "Computer Accessories",
-      "Hard Disks, Printers & Monitors",
-      "ACs",
-      "Washing Machines",
+  },
+
+  "Books, Sports & Hobbies": {
+    id: null, // handled by subcategories
+    subcats: [
+      { name: "Books", id: "701" },
+      { name: "Sports", id: "702" },
+      { name: "Hobbies", id: "703" },
     ],
-    "Furniture and Decor": [
-      "Sofas",
-      "Beds & Wardrobes",
-      "Dining Tables",
-      "Chairs & Stools",
-      "Home Decor & Garden",
-      "Office Furniture",
-    ],
-    Cars: [],
-    Bikes: [],
-    Pets: [],
-  };
+  },
+};
+
+//FETCH FUNCTION
+
+const fetchProductsByCategory = (categoryId) => {
+  if (!categoryId) return; // safety check
+  setLoading(true);
+
+  fetch(`http://localhost:5000/products/fetchProducts?categoryId=${categoryId}&price=${price}`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    })
+    .then((data) => {
+      setProducts(data);
+      setLoading(false);
+    })
+    .catch((err) => {
+      setError(err.message);
+      setLoading(false);
+    });
+};
 
   if (loading)
     return (
@@ -106,38 +119,44 @@ const productFilters = (category, subcategory = null) => {
             {/* ✅ Categories Card */}
             <div className="card categories-card">
               <h3 className="card-title">Categories</h3>
-              <ul className="category-list">
-                {Object.entries(categories).map(([cat, subcats]) => (
-                  <li key={cat} className={`category-item ${openCategory === cat ? "open" : ""}`}>
-                    <div
-                      className="category-header"
-                      onClick={() =>
-                        setOpenCategory(openCategory === cat ? null : cat)
-                      }
-                    >
-                      <span>{cat}</span>
-                      {subcats.length > 0 &&
-                        (openCategory === cat ? <FaChevronUp className="icon" /> : <FaChevronDown className="icon" />)}
-                    </div>
+             <ul className="category-list">
+  {Object.entries(categories).map(([cat, { id, subcats }]) => (
+    <li key={cat} className={`category-item ${openCategory === cat ? "open" : ""}`}>
+      <div
+        className="category-header"
+        onClick={() => {
+          // Toggle subcategory open/close
+          setOpenCategory(openCategory === cat ? null : cat);
+          
+          // Fetch products only if category has an ID
+          if (id) fetchProductsByCategory(Number(id));
+        }}
+      >
+        <span>{cat}</span>
+        {subcats.length > 0 &&
+          (openCategory === cat ? <FaChevronUp className="icon" /> : <FaChevronDown className="icon" />)}
+      </div>
 
-                    {subcats.length > 0 && openCategory === cat && (
-                      <ul className="subcategory-list">
-                        {subcats.map((sub) => (
-                          <li key={sub}>
-                            <span
-  className="subcategory-link"
-  onClick={() => productFilters(cat, sub)}
->
-  {sub}
-</span>
+      {subcats.length > 0 && openCategory === cat && (
+        <ul className="subcategory-list">
+          {subcats.map((sub) => (
+            <li key={sub.id}>
+              <span
+                className="subcategory-link"
+                onClick={() => fetchProductsByCategory(Number(sub.id))}
+              >
+                {sub.name}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  ))}
+</ul>
 
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
+
+
             </div>
 
             {/* ✅ Price Filter Card */}
@@ -155,29 +174,29 @@ const productFilters = (category, subcategory = null) => {
               <p className="price-text">Up to ₹ {price}</p>
             </div>
 
-            {/* ✅ Size Filter Card */}
-            <div className="card size-card">
-              <h4 className="card-title">Filter by Size</h4>
-              <div className="size-options">
-                {["S", "M", "L", "XL", "XXL"].map((s) => (
-                  <label key={s} className="size-label">
-                    <input
-                      type="checkbox"
-                      value={s}
-                      checked={selectedSizes.includes(s)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedSizes([...selectedSizes, s]);
-                        } else {
-                          setSelectedSizes(selectedSizes.filter((sz) => sz !== s));
-                        }
-                      }}
-                    />
-                    <span>{s}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+              {/* ✅ Size Filter Card
+              <div className="card size-card">
+                <h4 className="card-title">Filter by Size</h4>
+                <div className="size-options">
+                  {["S", "M", "L", "XL", "XXL"].map((s) => (
+                    <label key={s} className="size-label">
+                      <input
+                        type="checkbox"
+                        value={s}
+                        checked={selectedSizes.includes(s)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedSizes([...selectedSizes, s]);
+                          } else {
+                            setSelectedSizes(selectedSizes.filter((sz) => sz !== s));
+                          }
+                        }}
+                      />
+                      <span>{s}</span>
+                    </label>
+                  ))}
+                </div>
+              </div> */}
 
           </aside>
 
