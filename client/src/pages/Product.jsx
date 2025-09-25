@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Product.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useNavigate } from "react-router-dom"; 
 
 export default function Product() {
   const [products, setProducts] = useState([]);
@@ -10,6 +11,7 @@ export default function Product() {
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState("Latest Products");
 
+  const navigate = useNavigate();
   // Tiered price steps
   const priceSteps = {
     All: [
@@ -246,7 +248,16 @@ export default function Product() {
               <div className="product-content">
                 <h3 className="product-title">{p.title}</h3>
                 <p className="product-price">₹ {p.price}</p>
-                <button className="add-btn">Add to Cart</button>
+                <button
+                  className="add-btn"
+                  onClick={() => {
+                       navigate(`/product/${p._id}`)
+                        setResults([]);
+                        setQuery("");
+                      }}
+                >
+                   View
+                </button>
               </div>
             </div>
           ))}

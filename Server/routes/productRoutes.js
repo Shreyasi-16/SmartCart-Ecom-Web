@@ -15,23 +15,21 @@ router.get("/fetchProducts", async (req, res) => {
       return res.status(500).json({ message: "Collection not set" });
     }
 
-    let { categoryId, minPrice, maxPrice } = req.query;
+    let { categoryId, price } = req.query;
     let filter = {};
 
-    // ✅ Category filter
+    // Convert categoryId from string to number
     if (categoryId) {
       categoryId = Number(categoryId);
-      filter.categoryId = categoryId; // assuming categoryId is stored as Number in DB
+      filter.categoryId = categoryId;  // ✅ now matches number type in DB
     }
 
-    // ✅ Price range filter
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = Number(minPrice);
-      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    // Apply price filter (optional)
+    if (price) {
+      filter.price = { $lte: Number(price) };
     }
 
-    console.log("👉 Filter being applied:", filter);
+    console.log("👉 Filter being applied:", filter); // debug
 
     const products = await productsCollection.find(filter).toArray();
     res.status(200).json(products);
