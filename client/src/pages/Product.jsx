@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import "./Product.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; 
+import { useLocation } from "react-router-dom";
+
 
 export default function Product() {
   const [products, setProducts] = useState([]);
@@ -114,6 +116,35 @@ export default function Product() {
       ],
     },
   };
+  //HOME CATEGORIES
+  // Get state passed from Home
+const location = useLocation();
+const selectedCategory = location.state?.selectedCategory;
+
+const categoryIdMap = {
+  Fashion: "601",
+  Electronics: "402",
+  Furniture: "5",
+  Decor: "5",
+  "Books & Hobbies": "701",
+  Mobiles: "201",
+  Accessories: "602",
+  Cars: "1",
+  Bikes: "3",
+  Pets: "8",
+};
+
+const initialCategoryId = selectedCategory ? categoryIdMap[selectedCategory] : null;
+
+
+// Build the fetch URL
+let fetchUrl = "http://localhost:5000/fetchProducts";
+if (selectedCategory && categoryIdMap[selectedCategory]) {
+  fetchUrl += `?categoryId=${categoryIdMap[selectedCategory]}`;
+}
+
+
+
 
   const [minPrice, setMinPrice] = useState(priceSteps.All[0].min);
   const [maxPrice, setMaxPrice] = useState(priceSteps.All[priceSteps.All.length - 1].max);
@@ -133,20 +164,25 @@ export default function Product() {
     setMaxPrice(steps[steps.length - 1].max);
   }, [openCategory, activeSubcategoryId]);
 
-  const fetchProducts = () => {
-    let url = `http://localhost:5000/products/fetchProducts`;
-    if (minPrice !== "below") url += `?minPrice=${minPrice}`;
-    if (maxPrice !== "above") url += minPrice !== "below" ? `&maxPrice=${maxPrice}` : `?maxPrice=${maxPrice}`;
-    if (activeSubcategoryId) url += `&categoryId=${activeSubcategoryId}`;
-    else if (openCategory && categories[openCategory]?.id) url += `&categoryId=${categories[openCategory].id}`;
+ const fetchProducts = () => {
+  let url = `http://localhost:5000/products/fetchProducts?`;
 
-    setLoading(true);
-    fetch(url)
-      .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
-      .then(data => setProducts(data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  };
+
+  if (minPrice !== "below") url += `minPrice=${minPrice}&`;
+  if (maxPrice !== "above") url += `maxPrice=${maxPrice}&`;
+
+  if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}`;
+  else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}`;
+  else if (initialCategoryId) url += `categoryId=${initialCategoryId}`;
+  
+  setLoading(true);
+  fetch(url)
+    .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
+    .then(data => setProducts(data))
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false));
+};
+
 
   useEffect(() => { fetchProducts(); }, [minPrice, maxPrice, activeSubcategoryId, openCategory]);
 
@@ -255,7 +291,7 @@ export default function Product() {
                         setResults([]);
                         setQuery("");
                       }}
-                >
+                    >
                    View
                 </button>
               </div>
