@@ -20,6 +20,26 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+
+  // 🔹 Reuse sync function (same as in Signup.js)
+const syncUserToMongo = async (user) => {
+  try {
+    const idToken = await user.getIdToken();
+    const response = await fetch("http://localhost:5000/sync-user", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to sync user");
+    console.log("✅ User synced to MongoDB (Google Login)");
+  } catch (error) {
+    console.error("❌ Sync Error:", error.message);
+  }
+};
+
   const login = async (e) => {
     e.preventDefault();
     if (!email || !pass) {
@@ -43,10 +63,14 @@ export function Login() {
     }
   };
 
+
+
   const loginWithGoogle = async () => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
+       // 🔹 Ensure Google user is also synced
+      await syncUserToMongo(result.user);
       alert(`✅ Logged in as ${result.user.email}`);
       navigate("/profile");
     } catch (error) {

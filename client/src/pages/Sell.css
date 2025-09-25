@@ -1,23 +1,33 @@
 /* ------------------- Sell Container & Form (Existing) ------------------- */
 .sell-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 40px auto;
   padding: 20px;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  
 }
 
 .sell-title {
   text-align: center;
   font-weight: 700;
-  margin-bottom: 20px;
+  font-size: 2rem;
+  margin-bottom: 25px;
+  color: #0b1d39;
 }
 
 .sell-box {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  padding: 25px;
   position: relative;
+  transition: all 0.3s ease;
+ 
+}
+
+.sell-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
 }
 
 /* Back Arrow */
@@ -25,65 +35,74 @@
   position: absolute;
   top: 10px;
   left: 15px;
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
+  background: none;
+  font-size: 1.6rem;
   cursor: pointer;
   color: #333;
   padding: 6px 10px;
-  border-radius: 50%;
-  transition: background 0.2s ease-in-out;
-}
+  border: none;
 
-.back-arrow:hover {
-  background: #f5f5f5;
 }
 
 /* Category List */
 .category-heading {
-  font-size: 0.9rem;
-  color: #f4793c;
+  font-size: 1.7rem;
+  color: #ff6600;
   margin-bottom: 15px;
-  font-weight: bolder;
-  font-size: larger;
+  font-weight: 700;
+ 
 }
 
 .category-list {
-  list-style: none;
+  list-style:none;
   padding: 0;
   margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9fafb;
 }
 
 .category-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.3s, color 0.3s;
+
+ 
 }
 
 .category-item:hover {
-  background: #cedbe9;
+  background: #778ba0;
+  color: #fff;
+  transform: translateY(-4px);
+
 }
 
 .category-icon {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   margin-right: 15px;
-  color: #14105b;
+  color: #0b1d39;
 }
 
 .category-name {
   flex-grow: 1;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
-  color: #14105b;
+  color: #0b1d39;
 }
+
+.category-name:hover{
+  transform: translateX(3px);
+  color: #ffff;
+}
+
 
 .category-arrow {
   font-size: 1.2rem;
-  color: #070707;
+  color: #666;
 }
 
 /* Forms */
@@ -91,63 +110,78 @@
   display: flex;
   flex-direction: column;
   margin-top: 40px;
+  gap: 10px;
+  background-color: #ffff;
+  color: #0b1d39;
+  font-size: 1.1rem;
 }
 
 .category-form h3 {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 20px;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   text-align: center;
+  color: #0b1d39;
 }
 
 .category-form input,
 .category-form textarea,
 .category-form select {
-  padding: 10px;
-  margin-bottom: 15px;
+  padding: 12px 15px;
+  margin-bottom: 12px;
   border: 1px solid #ddd;
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 0.95rem;
+  transition: border 0.3s, box-shadow 0.3s;
+  color: #0b1d39;
+}
+
+.category-form input:focus,
+.category-form textarea:focus,
+.category-form select:focus {
+  border-color: #0b1d39;
+  box-shadow: 0 0 8px rgba(20, 14, 50, 0.2);
+  outline :invert;
 }
 
 .category-form textarea {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
 }
 
+/* Buttons */
 .category-form button {
-  padding: 12px;
-  margin-top: 5px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s ease-in-out;
+  transition: all 0.3s ease;
 }
 
 .category-form button[type="submit"] {
-  background: #002f34;
+  background: linear-gradient(135deg, #0b1d39, #014950);
   color: #fff;
 }
 
 .category-form button[type="submit"]:hover {
-  background: #014950;
+  background: linear-gradient(135deg, #ff6600, #ff914d);
 }
 
 .category-form button[type="button"] {
-  background: #f1f1f1;
-  color: #333;
+  background: #f5f5f5;
+  color: #0b1d39;
 }
 
 .category-form button[type="button"]:hover {
-  background: #e1e1e1;
+  background: #e0e0e0;
 }
 
-/* Photos grid */
+/* Photo Grid */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-top: 15px;
 }
 
@@ -155,7 +189,7 @@
   width: 100px;
   height: 100px;
   border: 2px dashed #ccc;
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -163,6 +197,12 @@
   overflow: hidden;
   background: #fafafa;
   position: relative;
+  transition: all 0.2s ease;
+}
+
+.photo-box:hover {
+  border-color: #ff6600;
+  transform: scale(1.05);
 }
 
 .photo-box img {
@@ -182,30 +222,30 @@
   pointer-events: none;
 }
 
-/* ------------------- Bike Subcategory Grid ------------------- */
+/* Subcategory Grid */
 .subcategory-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 10px;
   margin: 20px 0;
 }
 
 .subcategory-card {
-  background-color: #f0eeee;
+  background-color: #f0f0f5;
   padding: 20px;
-  border-radius: 12px;
+  margin-top: 20px;
+  border-radius: 16px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .subcategory-card:hover {
-  background-color: #61758a;
-  color: white;
-  transform: translateY(-3px);
+  background: #61758a;
+  color: #fff !important;
+  transform: translateY(-4px);
 }
 
 .subcategory-name {
@@ -217,28 +257,154 @@
   font-size: 18px;
 }
 
-/* ------------------- Button Group ------------------- */
+/* Button Groups */
 .button-group {
   display: flex;
   gap: 10px;
-  margin: 8px 0;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .button-group button {
-  padding: 8px 16px;
-  border: 1px solid #888;
-  border-radius: 6px;
-  background: white;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  background: #f5f5f5;
+  transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .button-group button:hover {
-  background: #f0f0f0;
+  background: #eaf2ff;
+  border-color: #ff6600;
 }
 
-.button-group button.selected {
-  background: #ee944a;
-  color: white;
-  border-color: #ee944a;
+.button-group button.active {
+  background: #ff6600;
+  color: #fff;
+  border-color: #ff6600;
+}
+
+/* Submit Button */
+.submit-btn {
+  margin-top: 25px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #0b1d39, #014950);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #ff6600, #ff914d);
+}
+
+/* -------------------- Location Form -------------------- */
+.location-form {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 900px;
+  margin: 20px 0px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  font-family: 'Arial', sans-serif;
+}
+
+.location-form h3 {
+  margin-bottom: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.location-form input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.location-form input[type="text"]:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0,123,255,0.3);
+}
+
+.location-form label {
+  display: inline-block;
+  margin-right: 15px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.location-form p {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* -------------------- Confirmed Location -------------------- */
+.confirmed-location {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 800px;
+  margin: 20px 0px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  font-family: 'Arial', sans-serif;
+  background-color: #f1f3f6;
+}
+
+.confirmed-location h4 {
+  margin-bottom: 12px;
+  color: #0b1d39;
+  font-weight: 600;
+  
+}
+
+.confirmed-location p {
+  font-size: 1.1rem;
+  margin: 6px 0;
+  color: #0b1d39;
+}
+
+.confirmed-location button {
+  background-color: #889195 !important;
+  color: rgb(26, 5, 53);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 12px;
+  display: block;
+  width: 300px;
+  transition: background-color 0.2s ease;
+}
+
+.confirmed-location button:hover {
+  color: #fff;
+}
+
+/* -------------------- Responsive -------------------- */
+@media screen and (max-width: 480px) {
+  .location-form, .confirmed-location {
+    padding: 15px;
+    margin: 15px;
+  }
+
+  .location-form input[type="text"], .location-form button,
+  .confirmed-location button {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
 }
