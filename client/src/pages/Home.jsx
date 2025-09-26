@@ -23,7 +23,6 @@ export function Home() {
     { name: "Women Clothing", icon: <FaTshirt size={40} />, color: "#ff6b35" },
     { name: "Laptops", icon: <FaLaptop size={40} />, color: "#1e3a8a" },
     { name: "Furniture", icon: <FaCouch size={40} />, color: "#10b981" },
-   
     { name: "Books", icon: <FaBook size={40} />, color: "#f59e0b" },
     { name: "Mobiles", icon: <FaMobileAlt size={40} />, color: "#2563eb" },
     { name: "Women Accessories", icon: <FaShoePrints size={40} />, color: "#dc2626" },

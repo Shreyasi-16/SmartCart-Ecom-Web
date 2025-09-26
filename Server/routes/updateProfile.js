@@ -16,6 +16,28 @@ router.get("/getId/:uid", async (req, res) => {
   }
 });
 
+// ✅ GET user by Mongo ObjectId
+router.get("/mongo/:id", async (req, res) => {
+  try {
+    let user;
+    try {
+      // try to convert into ObjectId
+      user = await User.findById(req.params.id);
+    } catch {
+      return res.status(400).json({ message: "Invalid Mongo ID format" });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user); // return full user doc (or you can sanitize fields here)
+  } catch (err) {
+    console.error("❌ Error fetching user by Mongo ID:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ✅ Helper: reverse geocode using OpenStreetMap
 async function reverseGeocode(lat, lng) {
   try {

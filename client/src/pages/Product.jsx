@@ -122,13 +122,12 @@ const location = useLocation();
 const selectedCategory = location.state?.selectedCategory;
 
 const categoryIdMap = {
-  Fashion: "601",
-  Electronics: "402",
+  "Women Clothing": "601",
+  Laptops: "402",
   Furniture: "5",
-  Decor: "5",
-  "Books & Hobbies": "701",
+  "Books": "701",
   Mobiles: "201",
-  Accessories: "602",
+  "Women Accessories": "602",
   Cars: "1",
   Bikes: "3",
   Pets: "8",
@@ -164,17 +163,37 @@ if (selectedCategory && categoryIdMap[selectedCategory]) {
     setMaxPrice(steps[steps.length - 1].max);
   }, [openCategory, activeSubcategoryId]);
 
- const fetchProducts = () => {
-  let url = `http://localhost:5000/products/fetchProducts?`;
+//  const fetchProducts = () => {
+//   let url = `http://localhost:5000/products/fetchProducts?`;
 
+
+//   if (minPrice !== "below") url += `minPrice=${minPrice}&`;
+//   if (maxPrice !== "above") url += `maxPrice=${maxPrice}&`;
+
+//   if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}`;
+//   else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}`;
+//   else if (initialCategoryId) url += `categoryId=${initialCategoryId}`;
+  
+//   setLoading(true);
+//   fetch(url)
+//     .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
+//     .then(data => setProducts(data))
+//     .catch(err => setError(err.message))
+//     .finally(() => setLoading(false));
+// };
+
+const fetchProducts = (sort = null) => {
+  let url = `http://localhost:5000/products/fetchProducts?`;
 
   if (minPrice !== "below") url += `minPrice=${minPrice}&`;
   if (maxPrice !== "above") url += `maxPrice=${maxPrice}&`;
 
-  if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}`;
-  else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}`;
-  else if (initialCategoryId) url += `categoryId=${initialCategoryId}`;
-  
+  if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}&`;
+  else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}&`;
+  else if (initialCategoryId) url += `categoryId=${initialCategoryId}&`;
+
+  if (sort) url += `sort=${sort}`;   // 🔥 send sort option
+
   setLoading(true);
   fetch(url)
     .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
@@ -271,10 +290,13 @@ if (selectedCategory && categoryIdMap[selectedCategory]) {
         <div className="topbar">
           <h2>Explore All Products</h2>
           <div className="dropdown">
-            <button className="dropdown-btn" onClick={() => setSelectedFilter(selectedFilter === "Latest Products" ? "Best Selling" : "Latest Products")}>
-              {selectedFilter} {selectedFilter === "Latest Products" ? "▼" : "▲"}
-            </button>
-          </div>
+    <button 
+      className="dropdown-btn" 
+      onClick={() => fetchProducts("latest")}  // 🔥 always fetch latest
+    >
+      Latest Products ▼
+    </button>
+  </div>
         </div>
 
         <div className="product-grid">

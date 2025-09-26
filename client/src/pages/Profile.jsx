@@ -6,15 +6,21 @@ import {
   signOut,
 } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css"; // make sure CSS is imported
 
 const Profile = () => {
   const auth = getAuth();
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
+  const [userProducts, setUserProducts] = useState([]);
+  const [showUserProducts, setShowUserProducts] = useState(false);
+  const [productsLoading, setProductsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -51,6 +57,10 @@ const Profile = () => {
                 data.manualLocation || { address: "", pincode: "" },
               gpsLocation:
                 data.gpsLocation || { type: "Point", coordinates: [0, 0] },
+            }));
+            setUser((prev) => ({
+              ...prev,
+              mongoId: data._id
             }));
           })
           .catch((err) => console.error("Error fetching user data:", err));
@@ -99,6 +109,24 @@ const Profile = () => {
       alert("Failed to log out.");
     }
   };
+  //FETCH USING SELLER ID
+  const fetchUserProducts = async () => {
+    if (!user?.mongoId) return;
+    setProductsLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/products/user/${user.mongoId}`);
+      if (!res.ok) throw new Error("Failed to fetch user products");
+      const data = await res.json();
+      setUserProducts(data);
+      setShowUserProducts(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load your products");
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -198,6 +226,7 @@ const Profile = () => {
                     >
                       Save Photo
                     </button>
+
                   )}
                 </div>
 
@@ -208,6 +237,12 @@ const Profile = () => {
                   {showForm ? "Cancel" : "Update Profile"}
                 </button>
 
+                <button
+                  className="btn btn-custom btn-info w-100 mb-2"
+                  onClick={fetchUserProducts}
+                >
+                  Your Products
+                </button>
                 <button
                   className="btn btn-custom btn-danger w-100"
                   onClick={handleLogout}
@@ -361,8 +396,49 @@ const Profile = () => {
                     </div>
                   </form>
                 )}
+                {showUserProducts && (
+                  <div className="mt-4">
+                    <h3 className="mb-3">🛍️ Your Products</h3>
+                    {productsLoading ? (
+                      <p>Loading...</p>
+                    ) : userProducts.length === 0 ? (
+                      <p>You have not posted any products yet.</p>
+                    ) : (
+                      <div className="row">
+                        {userProducts.map((p) => (
+                          <div key={p._id} className="col-md-6 mb-4">
+                            <div className="card h-100 shadow-sm border-0 rounded-3">
+                              <img
+                                src={p.photos && p.photos.length > 0 ? p.photos[0] : "/defaultBG.jpg"}
+                                className="card-img-top"
+                                alt={p.title}
+                                style={{ height: "200px", objectFit: "cover", borderTopLeftRadius: "0.5rem", borderTopRightRadius: "0.5rem" }}
+                                onError={(e) => { e.target.src = "/defaultBG.jpg"; }}
+                              />
+                              <div className="card-body d-flex flex-column">
+                                <h5 className="card-title text-truncate">{p.title}</h5>
+                                <p className="card-text fw-bold text-success mb-2">₹ {p.price}</p>
+                                <p className="card-text small text-muted flex-grow-1">
+                                  {p.description ? p.description.substring(0, 60) + "..." : "No description"}
+                                </p>
+                                <button
+                                  className="btn btn-primary mt-auto w-100"
+                                  onClick={() => navigate(`/product/${p._id}`)}
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </div>
+
           ) : (
             <p className="text-center">You are not logged in.</p>
           )}
