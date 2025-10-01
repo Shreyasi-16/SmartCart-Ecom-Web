@@ -46,11 +46,11 @@ async function reverseGeocode(lat, lng) {
     const data = await res.json();
 
     let city =
-      data.address.city ||
+      data.address.city ||  
       data.address.town ||
       data.address.village ||
-      data.address.municipality ||
-      data.address.county ||
+      // data.address.municipality ||
+      // data.address.county ||
       "";
     let state = data.address.state || "";
 
