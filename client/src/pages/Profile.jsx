@@ -7,13 +7,14 @@ import {
 } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
-import "./Profile.css"; // make sure CSS is imported
+import "./Profile.css";
 
 const Profile = () => {
   const auth = getAuth();
   const navigate = useNavigate();
 
   const [user, setUser] = useState(null);
+  const [mongoId, setMongoId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +22,9 @@ const Profile = () => {
   const [userProducts, setUserProducts] = useState([]);
   const [showUserProducts, setShowUserProducts] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
+
+  const DEFAULT_PROFILE_IMAGE = "/defaultProfile.jpg";
+  const DEFAULT_PRODUCT_IMAGE = "/defaultBG.jpg";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -33,42 +37,45 @@ const Profile = () => {
     gpsLocation: { type: "Point", coordinates: [0, 0] },
   });
 
+  // Listen to Firebase user only once
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser?.photoURL) setPreview(currentUser.photoURL);
-
-      if (currentUser) {
-        fetch(`http://localhost:5000/api/users/getId/${currentUser.uid}`)
-          .then((res) => {
-            if (!res.ok) throw new Error("User fetch failed");
-            return res.json();
-          })
-          .then((data) => {
-            setFormData((prev) => ({
-              ...prev,
-              name: data.name || "",
-              phone: data.phone || "",
-              aboutMe: data.aboutMe || "",
-              city: data.city || "",
-              state: data.state || "",
-              locationMode: data.locationMode || "manual",
-              manualLocation:
-                data.manualLocation || { address: "", pincode: "" },
-              gpsLocation:
-                data.gpsLocation || { type: "Point", coordinates: [0, 0] },
-            }));
-            setUser((prev) => ({
-              ...prev,
-              mongoId: data._id
-            }));
-          })
-          .catch((err) => console.error("Error fetching user data:", err));
+      if (currentUser?.photoURL) {
+        setPreview(currentUser.photoURL);
+      } else {
+        setPreview(DEFAULT_PROFILE_IMAGE);
       }
     });
-
     return () => unsubscribe();
   }, [auth]);
+
+  // Fetch Mongo user data when Firebase user is available
+  useEffect(() => {
+    if (!user) return;
+    fetch(`http://localhost:5000/api/users/getId/${user.uid}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("User fetch failed");
+        return res.json();
+      })
+      .then((data) => {
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || "",
+          phone: data.phone || "",
+          aboutMe: data.aboutMe || "",
+          city: data.city || "",
+          state: data.state || "",
+          locationMode: data.locationMode || "manual",
+          manualLocation:
+            data.manualLocation || { address: "", pincode: "" },
+          gpsLocation:
+            data.gpsLocation || { type: "Point", coordinates: [0, 0] },
+        }));
+        setMongoId(data._id);
+      })
+      .catch((err) => console.error("Error fetching user data:", err));
+  }, [user]);
 
   // Hide message after 5 seconds
   useEffect(() => {
@@ -89,32 +96,34 @@ const Profile = () => {
   const handleUpload = async () => {
     if (!selectedImage || !user) return;
     try {
-      await updateProfile(user, { photoURL: preview });
-      setMessage("Profile image saved successfully!");
+      await updateProfile(user, {
+        photoURL: preview || DEFAULT_PROFILE_IMAGE,
+      });
+      setMessage("Profile image saved successfully");
       setSelectedImage(null);
     } catch (err) {
       console.error(err);
-      setMessage("Failed to update photo.");
+      setMessage("Failed to update photo");
     }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      alert("Logged out successfully!");
+      alert("Logged out successfully");
       setUser(null);
-      window.location.href = "/login";
+      navigate("/login");
     } catch (err) {
       console.error(err);
-      alert("Failed to log out.");
+      alert("Failed to log out");
     }
   };
-  //FETCH USING SELLER ID
+
   const fetchUserProducts = async () => {
-    if (!user?.mongoId) return;
+    if (!mongoId) return;
     setProductsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/products/user/${user.mongoId}`);
+      const res = await fetch(`http://localhost:5000/products/user/${mongoId}`);
       if (!res.ok) throw new Error("Failed to fetch user products");
       const data = await res.json();
       setUserProducts(data);
@@ -126,7 +135,6 @@ const Profile = () => {
       setProductsLoading(false);
     }
   };
-
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -142,7 +150,7 @@ const Profile = () => {
 
   const handleGetGPS = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation not supported by your browser.");
+      alert("Geolocation not supported by your browser");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -155,11 +163,11 @@ const Profile = () => {
             coordinates: [pos.coords.longitude, pos.coords.latitude],
           },
         });
-        alert("GPS location captured!");
+        alert("GPS location captured");
       },
       (err) => {
         console.error(err);
-        alert("Failed to fetch GPS location.");
+        alert("Failed to fetch GPS location");
       }
     );
   };
@@ -167,42 +175,46 @@ const Profile = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     if (!user) return;
-
     try {
       const res = await fetch("http://localhost:5000/api/users/updateProfile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid: user.uid, ...formData }),
       });
-
       const data = await res.json();
       if (res.ok) {
-        setMessage("Profile updated successfully!");
+        setMessage("Profile updated successfully");
         setShowForm(false);
       } else {
         console.error("Failed to update profile:", data.message);
-        setMessage("Failed to update profile.");
+        setMessage("Failed to update profile");
       }
     } catch (err) {
       console.error(err);
-      setMessage("Error updating profile.");
+      setMessage("Error updating profile");
     }
   };
 
   return (
     <div className="profile-wrapper">
       <div className="profile-frame">
-        {/* left frame */}
         <div className="container mt-4 profile-container">
           {user ? (
             <div className="row">
               {/* LEFT SIDE */}
               <div className="col-md-4 text-center border-end">
                 <img
-                  src={preview || "https://via.placeholder.com/150"}
+                  src={preview || DEFAULT_PROFILE_IMAGE}
                   alt="Profile"
                   className="img-fluid rounded-circle mb-3"
-                  style={{ width: "150px", height: "150px", objectFit: "cover" }}
+                  style={{
+                    width: "150px",
+                    height: "150px",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    e.target.src = DEFAULT_PROFILE_IMAGE;
+                  }}
                 />
 
                 <div className="mb-3">
@@ -226,7 +238,6 @@ const Profile = () => {
                     >
                       Save Photo
                     </button>
-
                   )}
                 </div>
 
@@ -256,8 +267,11 @@ const Profile = () => {
                 <h2>Welcome, {user.displayName || "User"}</h2>
                 <p>Email: {user.email}</p>
 
-                {message && <div className="alert alert-info mt-3">{message}</div>}
+                {message && (
+                  <div className="alert alert-info mt-3">{message}</div>
+                )}
 
+                {/* Update form */}
                 {showForm && (
                   <form className="mt-4" onSubmit={handleUpdateProfile}>
                     <div className="mb-3">
@@ -292,7 +306,6 @@ const Profile = () => {
                       />
                     </div>
 
-                    {/* Location Mode Switch */}
                     <div className="mb-3">
                       <div className="form-check form-check-inline">
                         <input
@@ -300,7 +313,10 @@ const Profile = () => {
                           className="form-check-input"
                           checked={formData.locationMode === "manual"}
                           onChange={() =>
-                            setFormData({ ...formData, locationMode: "manual" })
+                            setFormData({
+                              ...formData,
+                              locationMode: "manual",
+                            })
                           }
                         />
                         <label className="form-check-label">Manual</label>
@@ -318,7 +334,6 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {/* Manual fields (City, State, Address, Pincode) */}
                     {formData.locationMode === "manual" && (
                       <>
                         <div className="row">
@@ -367,7 +382,6 @@ const Profile = () => {
                       </>
                     )}
 
-                    {/* GPS fields */}
                     {formData.locationMode === "gps" && (
                       <>
                         <div className="mb-3">
@@ -388,7 +402,6 @@ const Profile = () => {
                       </>
                     )}
 
-                    {/* Save button */}
                     <div className="mt-3">
                       <button type="submit" className="btn btn-success w-100">
                         Save Changes
@@ -396,9 +409,10 @@ const Profile = () => {
                     </div>
                   </form>
                 )}
+
                 {showUserProducts && (
                   <div className="mt-4">
-                    <h3 className="mb-3">🛍️ Your Products</h3>
+                    <h3 className="mb-3">Your Products</h3>
                     {productsLoading ? (
                       <p>Loading...</p>
                     ) : userProducts.length === 0 ? (
@@ -409,21 +423,40 @@ const Profile = () => {
                           <div key={p._id} className="col-md-6 mb-4">
                             <div className="card h-100 shadow-sm border-0 rounded-3">
                               <img
-                                src={p.photos && p.photos.length > 0 ? p.photos[0] : "/defaultBG.jpg"}
+                                src={
+                                  p.photos && p.photos.length > 0
+                                    ? p.photos[0]
+                                    : DEFAULT_PRODUCT_IMAGE
+                                }
                                 className="card-img-top"
                                 alt={p.title}
-                                style={{ height: "200px", objectFit: "cover", borderTopLeftRadius: "0.5rem", borderTopRightRadius: "0.5rem" }}
-                                onError={(e) => { e.target.src = "/defaultBG.jpg"; }}
+                                style={{
+                                  height: "200px",
+                                  objectFit: "cover",
+                                  borderTopLeftRadius: "0.5rem",
+                                  borderTopRightRadius: "0.5rem",
+                                }}
+                                onError={(e) => {
+                                  e.target.src = DEFAULT_PRODUCT_IMAGE;
+                                }}
                               />
                               <div className="card-body d-flex flex-column">
-                                <h5 className="card-title text-truncate">{p.title}</h5>
-                                <p className="card-text fw-bold text-success mb-2">₹ {p.price}</p>
+                                <h5 className="card-title text-truncate">
+                                  {p.title}
+                                </h5>
+                                <p className="card-text fw-bold text-success mb-2">
+                                  ₹ {p.price}
+                                </p>
                                 <p className="card-text small text-muted flex-grow-1">
-                                  {p.description ? p.description.substring(0, 60) + "..." : "No description"}
+                                  {p.description
+                                    ? p.description.substring(0, 60) + "..."
+                                    : "No description"}
                                 </p>
                                 <button
                                   className="btn btn-primary mt-auto w-100"
-                                  onClick={() => navigate(`/product/${p._id}`)}
+                                  onClick={() =>
+                                    navigate(`/product/${p._id}`)
+                                  }
                                 >
                                   View Details
                                 </button>
@@ -435,15 +468,13 @@ const Profile = () => {
                     )}
                   </div>
                 )}
-
               </div>
             </div>
-
           ) : (
             <p className="text-center">You are not logged in.</p>
           )}
         </div>
-        <div className="profile-frame"></div> {/* right frame */}
+        <div className="profile-frame"></div>
       </div>
     </div>
   );

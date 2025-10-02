@@ -12,11 +12,16 @@ import {
   FaDog,
 } from "react-icons/fa";
 
+const CLOUDINARY_CLOUD_NAME = "dzvfekrgb"; // from your Cloudinary dashboard
+const CLOUDINARY_UPLOAD_PRESET = "j_default"; // your unsigned upload preset
+
 // Main Sell Component
+
 export default function Sell() {
   // ------------------- // State Variables // -------------------
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [photos, setPhotos] = useState(Array(20).fill(null));
+  const [uploading, setUploading] = useState(Array(20).fill(false)); // NEW: Tracks upload status
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -26,8 +31,9 @@ export default function Sell() {
   const [owner, setOwner] = useState("");
   const [userId, setUserId] = useState(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
-
+  const [fetchedGPS, setFetchedGPS] = useState({ lat: 0, lng: 0 });
   const auth = getAuth();
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -38,8 +44,6 @@ export default function Sell() {
     });
     return () => unsubscribe();
   }, [auth]);
-
-  // -------------------- State --------------------
 
   //location
   const [formData, setFormData] = useState({
@@ -53,6 +57,7 @@ export default function Sell() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+
       if (currentUser) {
         fetch(`http://localhost:5000/api/users/getId/${currentUser.uid}`)
           .then((res) => {
@@ -60,10 +65,26 @@ export default function Sell() {
             return res.json();
           })
           .then((data) => {
+            const hasManual = data.locationMode === "manual";
+            const manualIncomplete =
+              hasManual &&
+              (!data.city ||
+                !data.state ||
+                !data.manualLocation?.address ||
+                !data.manualLocation?.pincode);
+
+            const gpsIncomplete =
+              data.locationMode === "gps" &&
+              (!data.gpsLocation || data.gpsLocation.coordinates[0] === 0);
+
+            const noLocationMode = !data.locationMode;
+
             setFormData({
               city: data.city || "",
               state: data.state || "",
-              locationMode: data.locationMode || "",
+              locationMode:
+                data.locationMode ||
+                (manualIncomplete || noLocationMode ? "manual" : "gps"),
               manualLocation: data.manualLocation || {
                 address: "",
                 pincode: "",
@@ -74,53 +95,67 @@ export default function Sell() {
               },
             });
 
-            // ✅ Default: fetched location is already confirmed
-            setLocationConfirmed(true);
+            // If any location info missing → force open location form
+            if (manualIncomplete || gpsIncomplete || noLocationMode) {
+              setIsChangingLocation(true);
+              setLocationConfirmed(false);
+            } else {
+              setLocationConfirmed(true);
+            }
           })
-          .catch((err) => console.error("Error fetching user data:", err));
+          .catch((err) => {
+            console.error("Error fetching user:", err);
+            // fallback: open location form if fetch fails
+            setIsChangingLocation(true);
+            setLocationConfirmed(false);
+          });
+      } else {
+        // if no logged-in user → reset location
+        setFormData({
+          city: "",
+          state: "",
+          locationMode: "manual", // default to manual for safety
+          manualLocation: { address: "", pincode: "" },
+          gpsLocation: { type: "Point", coordinates: [0, 0] },
+        });
+        setIsChangingLocation(true);
+        setLocationConfirmed(false);
       }
     });
+
     return () => unsubscribe();
   }, [auth]);
-  // Update top-level fields
+
+  // Simple reverse geocoding using OpenStreetMap Nominatim
+  const reverseGeocode = async (lat, lng) => {
+  try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+      const res = await fetch(url, { headers: { "User-Agent": "SmartCart-App" } });
+      const data = await res.json();
+  
+      let city =
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        data.address.municipality ||
+        data.address.county ||
+        "";
+      let state = data.address.state || "";
+  
+      return { city, state };
+    } catch (err) {
+      console.error("Geocoding error:", err);
+      return { city: "", state: "" };
+    }
+};
+
+  // ----------------- Handle text field change -----------------
   const handleLocationFieldChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  // Get GPS coordinates
-  const handleGetGPS = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation not supported by your browser.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // ✅ update locationMode and coordinates correctly
-        setFormData((prev) => ({
-          ...prev,
-          locationMode: "gps",
-          gpsLocation: {
-            type: "Point",
-            coordinates: [pos.coords.longitude, pos.coords.latitude],
-          },
-        }));
 
-        alert("GPS location captured!");
-      },
-      (err) => {
-        console.error(err);
-        alert("Failed to fetch GPS location.");
-      }
-    );
-  };
-
-  // Confirm location button
-  const handleConfirmLocation = () => {
-    setLocationConfirmed(true);
-    setIsChangingLocation(false);
-    alert(`Location confirmed!\nMode: ${formData.locationMode}`);
-  };
-
+  // ----------------- Handle manual subfields -----------------
   const handleManualLocationChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -128,151 +163,235 @@ export default function Sell() {
       manualLocation: { ...prev.manualLocation, [name]: value },
     }));
   };
-  const [fetchedGPS, setFetchedGPS] = useState({ lat: 0, lng: 0 });
-  // put thisfunction in the same file or a utils file to reuse it in other forms
+
+  // ----------------- GPS Fetch -----------------
+  const handleGetGPS = async () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported by your browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      // Reverse geocode to get city/state
+      const location = await reverseGeocode(lat, lng);
+
+      // Update state
+      setFormData((prev) => ({
+        ...prev,
+        locationMode: "gps",
+        gpsLocation: { type: "Point", coordinates: [lng, lat] },
+        city: location.city,
+        state: location.state,
+      }));
+
+      setFetchedGPS({ lat, lng });
+      alert(`GPS captured! City: ${location.city}, State: ${location.state}`);
+
+      // Save to backend
+      if (user) {
+        try {
+          const res = await fetch(`http://localhost:5000/api/users/updateLocation/${user.uid}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              locationMode: "gps",
+              gpsLocation: { type: "Point", coordinates: [lng, lat] },
+              city: location.city,
+              state: location.state,
+            }),
+          });
+
+          if (!res.ok) throw new Error("Failed to save location to DB");
+          console.log("Location saved successfully!");
+        } catch (err) {
+          console.error("Error saving location:", err);
+        }
+      }
+    },
+    (err) => {
+      console.error(err);
+      alert("Failed to fetch GPS location.");
+    }
+  );
+};
+
+  // ----------------- Validation -----------------
+  const validateLocation = () => {
+    if (!formData.locationMode) {
+      alert("Please select a location mode (Manual or GPS).");
+      return false;
+    }
+
+    if (formData.locationMode === "manual") {
+      if (
+        !formData.city.trim() ||
+        !formData.state.trim() ||
+        !formData.manualLocation.address.trim() ||
+        !formData.manualLocation.pincode.trim()
+      ) {
+        alert("Please fill all manual location fields.");
+        return false;
+      }
+    }
+
+    if (formData.locationMode === "gps") {
+      if (
+        !formData.gpsLocation.coordinates ||
+        formData.gpsLocation.coordinates[0] === 0
+      ) {
+        alert("Please fetch GPS location before confirming.");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // ----------------- Confirm -----------------
+  const handleConfirmLocation = () => {
+    if (!validateLocation()) return;
+
+    setLocationConfirmed(true);
+    setIsChangingLocation(false);
+    alert(`Location confirmed!\nMode: ${formData.locationMode}`);
+  };
+
+  // ----------------- UI Render -----------------
   function renderLocation(formData) {
-  if (!formData) return <p>Loading location...</p>;
+    if (!formData) return <p>Loading location...</p>;
 
-  if (isChangingLocation) {
-    return (
-      <div className="location-form">
-        <h3>Update Location</h3>
+    if (isChangingLocation) {
+      return (
+        <div className="location-form">
+          <h3>Update Location</h3>
 
-        {/* ---------------- Radio buttons at the top ---------------- */}
-        <div>
-          <label>
-            <input
-              type="radio"
-              checked={formData.locationMode === "manual"}
-              onChange={() =>
-                setFormData((prev) => ({ ...prev, locationMode: "manual" }))
-              }
-            />
-            Manual
-          </label>
-          <label>
-            <input
-              type="radio"
-              checked={formData.locationMode === "gps"}
-              onChange={() => {
-                setFormData((prev) => ({ ...prev, locationMode: "gps" }));
-                // Reset temporary GPS so user must fetch again
-                setFetchedGPS({ lat: 0, lng: 0 });
-              }}
-            />
-            GPS
-          </label>
-        </div>
-
-        {/* ---------------- Fields ---------------- */}
-        {formData.locationMode === "manual" && (
-          <>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleLocationFieldChange}
-              placeholder="City"
-              required
-            />
-            <input
-              type="text"
-              name="state"
-              value={formData.state}
-              onChange={handleLocationFieldChange}
-              placeholder="State"
-              required
-            />
-            <input
-              type="text"
-              name="address"
-              value={formData.manualLocation.address}
-              onChange={handleManualLocationChange}
-              placeholder="Address"
-              required
-            />
-            <input
-              type="text"
-              name="pincode"
-              value={formData.manualLocation.pincode}
-              onChange={handleManualLocationChange}
-              placeholder="Pincode"
-              required
-            />
-          </>
-        )}
-
-        {formData.locationMode === "gps" && (
-          <>
-            {/* Show button until user fetches GPS */}
-            {fetchedGPS.lat === 0 && fetchedGPS.lng === 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      setFetchedGPS({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                      });
-                      alert("GPS location captured!");
-                    },
-                    () => alert("Failed to fetch GPS location.")
-                  );
+          {/* Radio buttons */}
+          <div>
+            <label>
+              <input
+                type="radio"
+                checked={formData.locationMode === "manual"}
+                onChange={() =>
+                  setFormData((prev) => ({ ...prev, locationMode: "manual" }))
+                }
+              />
+              Manual
+            </label>
+            <label>
+              <input
+                type="radio"
+                checked={formData.locationMode === "gps"}
+                onChange={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    locationMode: "gps",
+                    gpsLocation: { type: "Point", coordinates: [0, 0] }, // reset saved coords
+                  }));
+                  setFetchedGPS({ lat: 0, lng: 0 });
                 }}
-              >
-                Get GPS Location
-              </button>
-            )}
+              />
+              GPS
+            </label>
+          </div>
 
-            {/* Show fetched coordinates */}
-            {fetchedGPS.lat !== 0 && fetchedGPS.lng !== 0 && (
-              <div>
-                <p>Latitude: {fetchedGPS.lat}</p>
-                <p>Longitude: {fetchedGPS.lng}</p>
-              </div>
-            )}
+          {/* Manual Mode */}
+          {formData.locationMode === "manual" && (
+            <>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleLocationFieldChange}
+                placeholder="City"
+                required
+              />
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleLocationFieldChange}
+                placeholder="State"
+                required
+              />
+              <input
+                type="text"
+                name="address"
+                value={formData.manualLocation.address}
+                onChange={handleManualLocationChange}
+                placeholder="Address"
+                required
+              />
+              <input
+                type="text"
+                name="pincode"
+                value={formData.manualLocation.pincode}
+                onChange={handleManualLocationChange}
+                placeholder="Pincode"
+                required
+              />
+            </>
+          )}
+
+          {/* GPS Mode */}
+          {/* GPS Mode */}
+          {formData.locationMode === "gps" && (
+            <>
+              {/* Always force Get GPS until user fetches in this session */}
+              {fetchedGPS.lat === 0 && fetchedGPS.lng === 0 ? (
+                <button type="button" onClick={handleGetGPS}>
+                  Get GPS Location
+                </button>
+              ) : (
+                <div>
+                  <p>Latitude: {fetchedGPS.lat}</p>
+                  <p>Longitude: {fetchedGPS.lng}</p>
+                </div>
+              )}
+            </>
+          )}
+
+          <button type="button" onClick={handleConfirmLocation}>
+            Confirm Location
+          </button>
+        </div>
+      );
+    }
+
+    // Default confirmed location
+    return (
+      <div className="confirmed-location">
+        <h4>Location:</h4>
+        {formData.locationMode === "manual" ? (
+          <>
+            <p>City: {formData.city}</p>
+            <p>State: {formData.state}</p>
+            <p>Address: {formData.manualLocation.address}</p>
+            <p>Pincode: {formData.manualLocation.pincode}</p>
+          </>
+        ) : (
+          <>
+            <p>GPS:</p>
+            <p>Latitude: {formData.gpsLocation.coordinates[1]}</p>
+            <p>Longitude: {formData.gpsLocation.coordinates[0]}</p>
           </>
         )}
-
-        <button type="button" onClick={handleConfirmLocation}>
-          Confirm Location
+        <button
+          className="changeLoc-btn"
+          type="button"
+          onClick={() => setIsChangingLocation(true)}
+        >
+          Change Location
         </button>
       </div>
     );
   }
 
-  // Default confirmed location display
-  return (
-    <div className="confirmed-location">
-      <h4>Location:</h4>
-      {formData.locationMode === "manual" ? (
-        <>
-          <p>City: {formData.city}</p>
-          <p>State: {formData.state}</p>
-          <p>Address: {formData.manualLocation.address}</p>
-          <p>Pincode: {formData.manualLocation.pincode}</p>
-        </>
-      ) : (
-        <>
-          <p>GPS:</p>
-          <p>Latitude: {formData.gpsLocation.coordinates[1]}</p>
-          <p>Longitude: {formData.gpsLocation.coordinates[0]}</p>
-        </>
-      )}
-      <button
-        className="changeLoc-btn"
-        type="button"
-        onClick={() => setIsChangingLocation(true)}
-      >
-        Change Location
-      </button>
-    </div>
-  );
-}
-
   const handleConfirm = () => {
-    // No separate API needed here;it will be included in the productData
+    if (!validateLocation()) return;
     alert("Location confirmed!");
     setShowLocationForm(false);
   };
@@ -283,98 +402,120 @@ export default function Sell() {
 
     if (!year) return `${label} is required.`;
     if (!/^\d{4}$/.test(year)) return `${label} must be a 4-digit number.`;
-    if (year < 1990 || year > currentYear + 1)
-      return `${label} must be between 1900 and ${currentYear + 1}.`;
+    if (year < 1990 || year > currentYear)
+      return `${label} must be between 1990 and ${currentYear}.`;
 
     return null;
   };
-
   const validateForm = () => {
-    const errors = [];
+  const errors = [];
 
-    // Common fields
-    if (!formData.title) errors.push("Title is required.");
-    if (!formData.description) errors.push("Description is required.");
-    if (!formData.price || formData.price <= 0)
-      errors.push("Price must be greater than 0.");
+  // ----------------- Common fields -----------------
+  if (!formData.title) errors.push("Title is required.");
+  if (!formData.description) errors.push("Description is required.");
+  if (!formData.price || formData.price <= 0)
+    errors.push("Price must be greater than 0.");
 
-    // Category-specific validation
-    if (selectedCategory === 1) {
-      // Cars
-      if (!formData.brand) errors.push("Car brand is required.");
-      if (!formData.model) errors.push("Car model is required.");
-      const yearError = validateYear(formData.year, "Car year");
-      if (yearError) errors.push(yearError);
-      if (!fuel) errors.push("Fuel type is required.");
-      if (!transmission) errors.push("Transmission type is required.");
-      if (!formData.kmDriven) errors.push("KM driven is required.");
-      if (!owner) errors.push("Number of owners is required.");
+  // ----------------- Location validation -----------------
+  if (!formData.locationMode) {
+    errors.push("Please select a location mode (manual or GPS).");
+  } else if (formData.locationMode === "manual") {
+    if (!formData.manualLocation.address)
+      errors.push("Manual address is required.");
+    if (!formData.manualLocation.pincode)
+      errors.push("Pincode is required for manual location.");
+    if (!formData.city) errors.push("City is required.");
+    if (!formData.state) errors.push("State is required.");
+  } else if (formData.locationMode === "gps") {
+    if (
+      !formData.gpsLocation ||
+      !formData.gpsLocation.coordinates ||
+      formData.gpsLocation.coordinates.length !== 2 ||
+      (formData.gpsLocation.coordinates[0] === 0 &&
+        formData.gpsLocation.coordinates[1] === 0)
+    ) {
+      errors.push("Valid GPS coordinates are required.");
     }
+    
+  }
 
-    if (selectedCategory === 2) {
-      // Mobiles
-      if (selectedSubcategory === "Mobile Phones") {
-        if (!formData.brand) errors.push("Mobile brand is required.");
-        const yearError = validateYear(formData.year, "Mobile year");
-        if (yearError) errors.push(yearError);
-      }
-      if (selectedSubcategory === "Tablets") {
-        if (!formData.tabletType) errors.push("Tablet type is required.");
-        const yearError = validateYear(formData.year, "Tablet year");
-        if (yearError) errors.push(yearError);
-      }
-    }
+  // ----------------- Category-specific validation -----------------
+  if (selectedCategory === 1) {
+    // Cars
+    if (!formData.brand) errors.push("Car brand is required.");
+    if (!formData.model) errors.push("Car model is required.");
+    const yearError = validateYear(formData.year, "Car year");
+    if (yearError) errors.push(yearError);
+    if (!fuel) errors.push("Fuel type is required.");
+    if (!transmission) errors.push("Transmission type is required.");
+    if (!formData.kmDriven) errors.push("KM driven is required.");
+    if (!owner) errors.push("Number of owners is required.");
+  }
 
-    if (selectedCategory === 3) {
-      // Bikes
-      if (!formData.brand) errors.push("Bike brand is required.");
-      if (!formData.model) errors.push("Bike model is required.");
-      const yearError = validateYear(formData.year, "Bike year");
-      if (yearError) errors.push(yearError);
-      if (!formData.kmDriven) errors.push("Bike KM driven is required.");
-      if (!formData.vehicleType) errors.push("Bike vehicle type is required.");
-    }
-
-    if (selectedCategory === 4) {
-      // Electronics
-      if (!formData.brand) errors.push("Electronics brand is required.");
-      if (!formData.model) errors.push("Electronics model is required.");
-      const yearError = validateYear(formData.year, "Electronics year");
-      if (yearError) errors.push(yearError);
-    }
-
-    if (selectedCategory === 5) {
-      // Furniture
-      if (!formData.brand) errors.push("Furniture brand is required.");
-      if (!formData.model) errors.push("Furniture model is required.");
-      const yearError = validateYear(formData.year, "Furniture year");
+  if (selectedCategory === 2) {
+    // Mobiles
+    if (selectedSubcategory === "Mobile Phones") {
+      if (!formData.brand) errors.push("Mobile brand is required.");
+      const yearError = validateYear(formData.year, "Mobile year");
       if (yearError) errors.push(yearError);
     }
-
-    if (selectedCategory === 6) {
-      // Fashion
-      if (!formData.brand) errors.push("Fashion brand is required.");
-      const yearError = validateYear(formData.year, "Fashion year");
+    if (selectedSubcategory === "Tablets") {
+      if (!formData.tabletType) errors.push("Tablet type is required.");
+      const yearError = validateYear(formData.year, "Tablet year");
       if (yearError) errors.push(yearError);
-      if (!formData.size) errors.push("Fashion size is required.");
     }
+  }
 
-    if (selectedCategory === 7) {
-      // Books, Sports, Hobbies
-      const yearError = validateYear(formData.year, "Year");
-      if (yearError) errors.push(yearError);
-      if (!formData.condition) errors.push("Condition is required.");
-    }
+  if (selectedCategory === 3) {
+    // Bikes
+    if (!formData.brand) errors.push("Bike brand is required.");
+    if (!formData.model) errors.push("Bike model is required.");
+    const yearError = validateYear(formData.year, "Bike year");
+    if (yearError) errors.push(yearError);
+    if (!formData.kmDriven) errors.push("Bike KM driven is required.");
+    if (!formData.vehicleType) errors.push("Bike vehicle type is required.");
+  }
 
-    if (selectedCategory === 8) {
-      // Pets
-      const yearError = validateYear(formData.year, "Pet year");
-      if (yearError) errors.push(yearError);
-      if (!formData.type) errors.push("Pet type is required.");
-    }
+  if (selectedCategory === 4) {
+    // Electronics
+    if (!formData.brand) errors.push("Electronics brand is required.");
+    if (!formData.model) errors.push("Electronics model is required.");
+    const yearError = validateYear(formData.year, "Electronics year");
+    if (yearError) errors.push(yearError);
+  }
 
-    return errors;
-  };
+  if (selectedCategory === 5) {
+    // Furniture
+    if (!formData.brand) errors.push("Furniture brand is required.");
+    if (!formData.model) errors.push("Furniture model is required.");
+    const yearError = validateYear(formData.year, "Furniture year");
+    if (yearError) errors.push(yearError);
+  }
+
+  if (selectedCategory === 6) {
+    // Fashion
+    if (!formData.brand) errors.push("Fashion brand is required.");
+    const yearError = validateYear(formData.year, "Fashion year");
+    if (yearError) errors.push(yearError);
+    if (!formData.size) errors.push("Fashion size is required.");
+  }
+
+  if (selectedCategory === 7) {
+    // Books, Sports, Hobbies
+    const yearError = validateYear(formData.year, "Year");
+    if (yearError) errors.push(yearError);
+    if (!formData.condition) errors.push("Condition is required.");
+  }
+
+  if (selectedCategory === 8) {
+    // Pets
+    const yearError = validateYear(formData.year, "Pet year");
+    if (yearError) errors.push(yearError);
+    if (!formData.type) errors.push("Pet type is required.");
+  }
+
+  return errors;
+};
 
   // ------------------- // Subcategories // -------------------
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
@@ -411,21 +552,55 @@ export default function Sell() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   // ------------------- // Handle Photo Upload // -------------------
-  const handlePhotoChange = (e, index) => {
+  const handlePhotoChange = async (e, index) => {
     const file = e.target.files[0];
-    if (file) {
-      const newPhotos = [...photos];
-      newPhotos[index] = URL.createObjectURL(file);
-      setPhotos(newPhotos);
+    if (!file) return;
+
+    const newUploading = [...uploading];
+    newUploading[index] = true;
+    setUploading(newUploading);
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    data.append("cloud_name", CLOUDINARY_CLOUD_NAME);
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+      const result = await res.json();
+
+      if (result.secure_url) {
+        const newPhotos = [...photos];
+        newPhotos[index] = result.secure_url;
+        setPhotos(newPhotos);
+      } else {
+        throw new Error("Image upload failed, no secure_url received.");
+      }
+    } catch (err) {
+      console.error("Cloudinary upload error:", err);
+      alert("Error uploading image.");
+    } finally {
+      const finalUploading = [...uploading];
+      finalUploading[index] = false;
+      setUploading(finalUploading);
     }
   };
+
   // ------------------- // Render Photo Grid // -------------------
   const renderPhotoGrid = () => (
     <div className="photo-grid">
-      {photos.map((photo, index) => (
+      {Array.from({ length: 20 }).map((_, index) => (
         <label key={index} className="photo-box">
-          {photo ? (
-            <img src={photo} alt={`upload-${index}`} />
+          {uploading[index] ? (
+            <div className="loader"></div> /* Simple CSS loader */
+          ) : photos[index] ? (
+            <img src={photos[index]} alt={`upload-${index}`} />
           ) : (
             <span className="plus">+</span>
           )}
@@ -433,13 +608,13 @@ export default function Sell() {
             type="file"
             accept="image/*"
             onChange={(e) => handlePhotoChange(e, index)}
+            disabled={uploading[index]}
             hidden
           />
         </label>
       ))}
     </div>
   );
-
   // ------------------- // Submit Form // -------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -448,6 +623,20 @@ export default function Sell() {
       alert("Please fix the following errors:\n" + errors.join("\n"));
       return;
     }
+
+    // ✅ Ensure reverse geocoded city/state if GPS mode
+  if (formData.locationMode === "gps" && (!formData.city || !formData.state)) {
+    const loc = await reverseGeocode(
+      formData.gpsLocation.coordinates[1], // lat
+      formData.gpsLocation.coordinates[0]  // lng
+    );
+    setFormData((prev) => ({
+      ...prev,
+      city: loc.city,
+      state: loc.state,
+    }));
+  }
+
     const {
       title,
       description,
@@ -591,13 +780,19 @@ export default function Sell() {
         size: formData.size || "",
       };
     }
+    const finalPhotoUrls = photos.filter((p) => p !== null);
+
+    if (finalPhotoUrls.length === 0) {
+      alert("Please upload at least one photo.");
+      return;
+    }
 
     const productData = {
       title: title || "",
       description: description || "",
       price: price ?? 0,
       categoryId: categoryId ?? 0,
-      photos: photos.filter((p) => p !== null),
+      photoUrls: finalPhotoUrls,
       attributes,
       seller: userId,
       city: formData.city,

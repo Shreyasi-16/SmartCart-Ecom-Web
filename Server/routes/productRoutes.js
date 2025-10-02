@@ -1,8 +1,10 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
-
+const uploadToCloudinary = require("../config/cloudinary"); // adjust path
+const fileUpload = require("express-fileupload");
 const router = express.Router();
 let productsCollection; // Will be set from index.js
+router.use(fileUpload());
 
 // Allow index.js to set the collection
 function setCollection(collection) {
@@ -69,6 +71,53 @@ router.get("/fetchProducts", async (req, res) => {
    
   } catch (err) {
     console.error("❌ Error fetching products:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// ➡️ ADD PRODUCT WITH CLOUDINARY UPLOAD
+router.post("/addProduct", async (req, res) => {
+  try {
+    if (!productsCollection) {
+      return res.status(500).json({ message: "Collection not set" });
+    }
+
+    const { title, description, price, categoryId, seller } = req.body;
+
+    if (!req.files || !req.files.photos) {
+      return res.status(400).json({ message: "No photos uploaded" });
+    }
+
+    // handle single or multiple files
+    const files = Array.isArray(req.files.photos)
+      ? req.files.photos
+      : [req.files.photos];
+
+    const uploadedUrls = [];
+    for (const file of files) {
+      const url = await uploadToCloudinary(file, "products");
+      uploadedUrls.push(url);
+    }
+
+    const newProduct = {
+      title,
+      description,
+      price: Number(price),
+      categoryId: Number(categoryId),
+      seller: new ObjectId(seller),
+      photos: uploadedUrls,
+      createdAt: new Date(),
+    };
+
+    const result = await productsCollection.insertOne(newProduct);
+
+    res.status(201).json({
+      message: "✅ Product added successfully",
+      productId: result.insertedId,
+      photos: uploadedUrls,
+    });
+  } catch (err) {
+    console.error("❌ Error adding product:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });

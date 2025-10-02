@@ -4,21 +4,29 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
+const fileUpload = require("express-fileupload");
 
 const userRoutes = require("./routes/userRoutes");
 const { router: productRoutes, setCollection } = require("./routes/productRoutes");
 const sellRoutes = require("./routes/sellRoutes");
-const updateProfile = require("./routes/updateProfile");  
+const updateProfile = require("./routes/updateProfile");
+const chatRoutes = require("./routes/chatRoutes");  
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Use file upload ONCE
+app.use(fileUpload({ useTempFiles: true }));
 
 // Routes
 app.use(userRoutes);
 app.use("/products", productRoutes);
 app.use("/api/sell", sellRoutes);
 app.use("/api/users", updateProfile);
+app.use("/api/chats", chatRoutes);
+app.use("/uploads", express.static("uploads"));
 
 
 app.get("/", (req, res) => {

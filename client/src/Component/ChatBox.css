@@ -1,0 +1,190 @@
+/* Chatbox overlay covers whole screen */
+.chatbox-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background: rgba(0, 0, 0, 0.5);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 2000;
+}
+
+/* Main chat window */
+.chatbox {
+background: #fff;
+width: 450px;
+height: 600px; /* fixed size */
+border-radius: 12px;
+display: flex;
+flex-direction: column;
+box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+overflow: hidden;
+position: relative;
+}
+
+/* Chat header */
+.chatbox-header {
+background: #007bff;
+color: #fff;
+padding: 15px;
+font-size: 18px;
+font-weight: bold;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+/* Close button */
+.chatbox-header button {
+background: transparent;
+border: none;
+color: #fff;
+font-size: 20px;
+cursor: pointer;
+}
+
+/* Messages area */
+.chatbox-messages {
+flex: 1;
+padding: 15px;
+overflow-y: auto;   /* scroll only messages */
+background: #f9f9f9;
+display: flex;
+flex-direction: column;
+}
+
+/* Custom scrollbar */
+.chatbox-messages::-webkit-scrollbar {
+width: 6px;
+}
+.chatbox-messages::-webkit-scrollbar-thumb {
+background: #ccc;
+border-radius: 3px;
+}
+.chatbox-messages::-webkit-scrollbar-thumb:hover {
+background: #999;
+}
+.chatbox-input {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  align-items: center;
+  gap: 8px;
+}
+.chatbox-input input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+.chatbox-input input[type="file"] {
+  flex: 0 0 auto;         /* don’t stretch */
+  width: 120px;           /* fixed width */
+  font-size: 12px;
+}
+.chatbox-input button {
+  flex: 0 0 auto;         /* don’t shrink away */
+  background: #007bff;
+  color: white;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+.chatbox-input button:hover {
+  background: #0056b3;
+}
+.file-label {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* Message bubbles */
+.message {
+padding: 10px 14px;
+margin: 6px 0;
+border-radius: 8px;
+max-width: 75%;
+font-size: 14px;
+word-wrap: break-word;
+}
+
+.msg-time 
+{
+  display: block;
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+  text-align: right;
+}
+
+
+.sent {
+background: #007bff;
+color: #fff;
+margin-left: auto;
+}
+
+.received {
+background: #e5e5ea;
+color: #333;
+margin-right: auto;
+}
+
+/* Restrict image size in chat */
+.chat-img {
+max-width: 160px;
+max-height: 160px;
+border-radius: 6px;
+object-fit: cover;
+margin-top: 5px;
+display: block;
+cursor: pointer;
+transition: transform 0.2s ease;
+}
+
+.chat-img:hover {
+transform: scale(1.05);
+}
+
+/* Input area */
+.chatbox-input {
+display: flex;
+padding: 12px;
+border-top: 1px solid #ddd;
+background: #fff;
+align-items: center;
+gap: 8px;
+}
+
+.chatbox-input input[type="text"] {
+flex: 1;
+padding: 10px;
+border-radius: 6px;
+border: 1px solid #ccc;
+font-size: 14px;
+}
+
+.chatbox-input input[type="file"] {
+font-size: 12px;
+}
+
+.chatbox-input button {
+background: #007bff;
+color: white;
+padding: 10px 14px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+transition: 0.2s ease;
+}
+
+.chatbox-input button:hover {
+background: #0056b3;
+}
