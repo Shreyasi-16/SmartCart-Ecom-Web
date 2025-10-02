@@ -6,6 +6,7 @@ import { Home } from './pages/Home.jsx';
 import Product from './pages/Product.jsx';
 import ProductPage from './pages/ProductPage.jsx'; 
 import { Contact } from './pages/Contact.jsx';
+import SellerProfile from './pages/SellerProfile.jsx'; 
 import { Cart } from './pages/Cart.jsx';
 import { Signup } from './pages/Signup.jsx';
 import { Login } from './pages/Login.jsx';
@@ -56,7 +57,13 @@ function App() {
           path: '/profile',
           element: <Profile />,
         },
-        { path: "/wishlist", element: <Wishlist /> }
+        {
+          path:"/seller/:sellerId",
+          element:<SellerProfile />
+        },
+
+        { path: "/wishlist", 
+          element: <Wishlist /> }
       ],
     },
   ]);
