@@ -9,10 +9,10 @@ const teamMembers = [
   {
     id: 1,
     name: "Saema Patel",
-    role: "ET23BTCO815",
+    enroll: "ET23BTCO815",
     description:
       "",
-    image: "mypic.jpeg",
+    image: "mypic.jpeg.jpg",
   },
   {
     id: 2,
@@ -20,7 +20,7 @@ const teamMembers = [
     enroll: "ET22BTCO130",
     description:
       "",
-    image: "mypic.jpeg",
+    image: "mypic.jpeg.jpg",
   },
   {
     id: 3,
@@ -28,7 +28,7 @@ const teamMembers = [
     enroll: "ET22BTCO141",
     description:
       "",
-    image: "mypic.jpeg",
+    image: "mypic.jpeg.jpg",
   },
   {
     id: 4,
@@ -36,7 +36,7 @@ const teamMembers = [
     enroll: "ET22BTCO092",
     description:
       "",
-    image: "mypic.jpeg",
+    image: "mypic.jpeg.jpg",
   },
   {
     id: 5,
@@ -44,7 +44,7 @@ const teamMembers = [
     enroll: "ET22BTCO103",
     description:
       "",
-    image: "mypic.jpeg",
+    image: "mypic.jpeg.jpg",
   },
 ];
 
