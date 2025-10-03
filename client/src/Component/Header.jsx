@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef,useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaSearch, FaShoppingCart, FaUser, FaHeart } from "react-icons/fa";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth"; // ⬅️ import this
@@ -14,8 +14,11 @@ export function Header() {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+   const searchRef = useRef(null); // 🔑 wrapper ref
+   const [highlightIndex, setHighlightIndex] = useState(-1);
 
-  // ✅ Listen for login/logout state changes
+
+   // ✅ Firebase auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -23,18 +26,13 @@ export function Header() {
     return () => unsubscribe();
   }, []);
 
+  // ✅ Fetch search results
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.length > 1) {
         fetch(`http://localhost:5000/products/search?query=${query}`)
-        
           .then((res) => res.json())
-.then((data) => {
-  console.log("Search results:", data);
-  setResults(data);
-})
-
-          
+          .then((data) => setResults(data))
           .catch((err) => console.error("Error fetching data:", err));
       } else {
         setResults([]);
@@ -44,6 +42,60 @@ export function Header() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // ✅ Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setResults([]);
+        setQuery("");
+        setHighlightIndex(-1);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Handle keyboard navigation
+  const handleKeyDown = (e) => {
+  if (results.length === 0) return;
+
+  if (e.key === "ArrowDown") {
+    setHighlightIndex((prev) => {
+      const newIndex = (prev + 1) % results.length;
+      setQuery(results[newIndex].title); // show product in input
+      return newIndex;
+    });
+  } else if (e.key === "ArrowUp") {
+    setHighlightIndex((prev) => {
+      const newIndex = (prev - 1 + results.length) % results.length;
+      setQuery(results[newIndex].title); // show product in input
+      return newIndex;
+    });
+  } else if (e.key === "Enter") {
+    if (highlightIndex >= 0) {
+      // navigate to selected product
+      navigate(`/product/${results[highlightIndex]._id}`);
+      setResults([]);
+      setHighlightIndex(-1);
+    } else {
+      // default: take first result
+      if (results[0]) {
+        navigate(`/product/${results[0]._id}`);
+        setResults([]);
+      }
+    }
+  }
+};
+
+
+  // ✅ Handle search icon click
+  const handleSearchClick = () => {
+    if (results.length > 0) {
+      navigate(`/product/${results[0]._id}`);
+      setResults([]);
+      setQuery("");
+    }
+  };
   const handleLogout = () => {
     signOut(auth).then(() => {
       setUser(null);
@@ -64,16 +116,20 @@ export function Header() {
 
           {/* Search Bar */}
           <div className="search-bar">
-            <div className="search-wrapper" style={{ position: "relative" }}>
-              <input
-                type="text"
-                placeholder="Search for products..."
-                className="form-control me-2"
-                style={{ width: "400px", padding: "0.6rem 1rem", fontSize: "1rem" }}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <FaSearch size={24} />
+            <div className="search-wrapper" style={{ position: "relative" }} ref={searchRef}>
+            <input
+              type="text"
+              placeholder="Search for products..."
+              className="form-control me-2"
+              style={{ width: "400px", padding: "0.6rem 1rem", fontSize: "1rem" }}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown} // 🔑 keyboard navigation
+            />
+            <FaSearch
+              size={24}
+              onClick={handleSearchClick} // 🔑 click search icon
+            />
               {/* Search results dropdown */}
               {results.length > 0 && (
                 <ul

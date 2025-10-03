@@ -4,6 +4,7 @@ import "@fontsource/poppins"; // Defaults to weight 400
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Home } from './pages/Home.jsx';
 import Product from './pages/Product.jsx';
+import AboutUs from './pages/Aboutus.jsx';
 import ProductPage from './pages/ProductPage.jsx'; 
 import { Contact } from './pages/Contact.jsx';
 import SellerProfile from './pages/SellerProfile.jsx'; 
@@ -63,7 +64,13 @@ function App() {
         },
 
         { path: "/wishlist", 
-          element: <Wishlist /> }
+          element: <Wishlist /> 
+        },
+         {
+          path: '/aboutus',
+          element: <AboutUs />,
+        }
+
       ],
     },
   ]);

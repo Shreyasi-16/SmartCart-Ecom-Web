@@ -1,0 +1,79 @@
+.aboutus-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 50px 20px;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #fefeff, #e3eff9); /* orange to yellow gradient */
+  border-radius: 15px;
+  color: #201162; /* change text color if needed */
+}
+
+
+.headersection .small-text {
+  color: #ff6600;
+  font-weight: bolder;
+  letter-spacing: 2px;
+  font-size: larger;
+}
+
+.headersection h1 {
+  font-size: 2.5rem;
+  margin: 10px 0;
+}
+
+.headersection .subtitle {
+  color: #2c1e6e;
+  max-width: 800px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+
+.team-carousel .slick-slide {
+  transition: transform 0.5s;
+  opacity: 0.5;
+}
+
+.team-carousel .slick-center {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+.team-card {
+  background: #fff;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 0 10px;
+}
+
+.team-img-container {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 15px;
+  overflow: hidden;
+  border-radius: 50%;
+  gap: 5px;
+ 
+}
+
+.team-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-info h3 {
+  margin: 10px 0 5px;
+  color:#0b1d39;
+}
+
+.team-info p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.team-name {
+  font-weight: bold;
+  color: #ff6600;
+}
