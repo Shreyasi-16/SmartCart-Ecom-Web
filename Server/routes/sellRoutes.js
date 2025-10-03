@@ -28,11 +28,27 @@ router.post("/", async (req, res) => {
             folder: "SmartCart",
           });
         });
-    
+         // After this:
+const uploadResults = await Promise.all(uploadPromises);
+
+// Add this:
+const photosWithEmbeddings = await Promise.all(
+  uploadResults.map(async (result) => {
+    try {
+      // Call Python service to get embedding
+      const res = await axios.post("http://127.0.0.1:8000/embed", { url: result.secure_url });
+
+      return { url: result.secure_url, embedding: res.data.embedding };
+    } catch (err) {
+      console.error("❌ Error fetching embedding:", err.message);
+      return { url: result.secure_url, embedding: [] };
+    }
+  })
+);
+ const savedPhotoUrls = uploadResults.map((result) => result.secure_url);
         
         
-            const uploadResults = await Promise.all(uploadPromises);
-            const savedPhotoUrls = uploadResults.map((result) => result.secure_url);
+           
     const newProduct = new Product({
       title,
       description,
@@ -41,7 +57,7 @@ router.post("/", async (req, res) => {
       city,
       categoryId,
       attributes,
-       photos: savedPhotoUrls,
+       photos: photosWithEmbeddings, // ✅ store embeddings per photo
       seller: user._id, 
       locationMode,
       gpsLocation,
