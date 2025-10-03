@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from "react";
 import "./Product.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { useNavigate } from "react-router-dom"; 
-import { useLocation } from "react-router-dom";
-
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Product() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openCategory, setOpenCategory] = useState("All");
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+
+  const [openCategory, setOpenCategory]               = useState("All");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(null);
-  const [selectedFilter, setSelectedFilter] = useState("Latest Products");
+  const [selectedFilter, setSelectedFilter] = useState("random");
+
+
+  // paging
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
+  const [total, setTotal] = useState(0);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
   // Tiered price steps
   const priceSteps = {
     All: [
@@ -66,7 +73,6 @@ export default function Product() {
       { min: 500, max: 5000, step: 250 },
       { min: 5000, max: 20000, step: 1000 },
     ],
-    // Subcategories example
     "Women Clothing": [
       { min: 50, max: 500, step: 50 },
       { min: 500, max: 5000, step: 500 },
@@ -116,39 +122,39 @@ export default function Product() {
       ],
     },
   };
-  //HOME CATEGORIES
-  // Get state passed from Home
-const location = useLocation();
-const selectedCategory = location.state?.selectedCategory;
 
-const categoryIdMap = {
-  "Women Clothing": "601",
-  Laptops: "402",
-  Furniture: "5",
-  "Books": "701",
-  Mobiles: "201",
-  "Women Accessories": "602",
-  Cars: "1",
-  Bikes: "3",
-  Pets: "8",
-};
+  // From Home (deep-link)
+  const selectedCategory = location.state?.selectedCategory;
 
-const initialCategoryId = selectedCategory ? categoryIdMap[selectedCategory] : null;
+  const categoryIdMap = {
+    "Women Clothing": "601",
+    Laptops: "402",
+    Furniture: "5",
+    Books: "701",
+    Mobiles: "201",
+    "Women Accessories": "602",
+    Cars: "1",
+    Bikes: "3",
+    Pets: "8",
+  };
 
+  const initialCategoryId = selectedCategory ? categoryIdMap[selectedCategory] : null;
 
-// Build the fetch URL
-let fetchUrl = "http://localhost:5000/fetchProducts";
-if (selectedCategory && categoryIdMap[selectedCategory]) {
-  fetchUrl += `?categoryId=${categoryIdMap[selectedCategory]}`;
-}
-
-
-
-
+  // Price filter state
   const [minPrice, setMinPrice] = useState(priceSteps.All[0].min);
   const [maxPrice, setMaxPrice] = useState(priceSteps.All[priceSteps.All.length - 1].max);
 
-  // Update min/max defaults based on category/subcategory
+  // Apply deep-link (when coming from Home)
+  useEffect(() => {
+    if (initialCategoryId) {
+      const inFashion = categories.Fashion.subcats.some(s => s.id === initialCategoryId);
+      if (inFashion) setOpenCategory("Fashion");
+      setActiveSubcategoryId(Number(initialCategoryId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategoryId]);
+
+  // Auto-adjust price range when category/subcategory changes
   useEffect(() => {
     let steps;
     if (activeSubcategoryId) {
@@ -163,50 +169,56 @@ if (selectedCategory && categoryIdMap[selectedCategory]) {
     setMaxPrice(steps[steps.length - 1].max);
   }, [openCategory, activeSubcategoryId]);
 
-//  const fetchProducts = () => {
-//   let url = `http://localhost:5000/products/fetchProducts?`;
+  // Build and fetch
+  const fetchProducts = (sort = "latest") => {
+    setSelectedFilter(sort);
 
+    const params = new URLSearchParams();
 
-//   if (minPrice !== "below") url += `minPrice=${minPrice}&`;
-//   if (maxPrice !== "above") url += `maxPrice=${maxPrice}&`;
+    if (minPrice !== "below") params.set("minPrice", String(minPrice));
+    if (maxPrice !== "above") params.set("maxPrice", String(maxPrice));
 
-//   if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}`;
-//   else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}`;
-//   else if (initialCategoryId) url += `categoryId=${initialCategoryId}`;
-  
-//   setLoading(true);
-//   fetch(url)
-//     .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
-//     .then(data => setProducts(data))
-//     .catch(err => setError(err.message))
-//     .finally(() => setLoading(false));
-// };
+    if (activeSubcategoryId) {
+      params.set("categoryId", String(activeSubcategoryId));
+    } else if (openCategory && categories[openCategory]?.id) {
+      params.set("categoryId", String(categories[openCategory].id));
+    } else if (initialCategoryId) {
+      params.set("categoryId", String(initialCategoryId));
+    }
 
-const fetchProducts = (sort = null) => {
-  let url = `http://localhost:5000/products/fetchProducts?`;
+    params.set("sort", sort);
+    params.set("page", String(page));
+    params.set("limit", String(pageSize));
 
-  if (minPrice !== "below") url += `minPrice=${minPrice}&`;
-  if (maxPrice !== "above") url += `maxPrice=${maxPrice}&`;
+    const url = `http://localhost:5000/products/fetchProducts?${params.toString()}`;
 
-  if (activeSubcategoryId) url += `categoryId=${activeSubcategoryId}&`;
-  else if (openCategory && categories[openCategory]?.id) url += `categoryId=${categories[openCategory].id}&`;
-  else if (initialCategoryId) url += `categoryId=${initialCategoryId}&`;
+    setLoading(true);
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch products");
+        return res.json();
+      })
+      .then(({ data, total: t }) => {
+        setTotal(t || 0);
+        setProducts(data || []);
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  };
 
-  if (sort) url += `sort=${sort}`;   // 🔥 send sort option
+  // Reset to page 1 when filters/sort change
+  useEffect(() => {
+    setPage(1);
+  }, [minPrice, maxPrice, activeSubcategoryId, openCategory, selectedFilter]);
 
-  setLoading(true);
-  fetch(url)
-    .then(res => { if (!res.ok) throw new Error("Failed to fetch products"); return res.json(); })
-    .then(data => setProducts(data))
-    .catch(err => setError(err.message))
-    .finally(() => setLoading(false));
-};
-
-
-  useEffect(() => { fetchProducts(); }, [minPrice, maxPrice, activeSubcategoryId, openCategory]);
+  // Initial + whenever filters/page/pageSize change
+  useEffect(() => {
+    fetchProducts(selectedFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minPrice, maxPrice, activeSubcategoryId, openCategory, selectedFilter, page, pageSize]);
 
   if (loading) return <div className="loader-container"><div className="loader"></div></div>;
-  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  if (error)   return <p style={{ color: "red" }}>Error: {error}</p>;
 
   const generatePriceOptions = (isMin) => {
     let steps;
@@ -219,14 +231,25 @@ const fetchProducts = (sort = null) => {
       steps = priceSteps[openCategory] || priceSteps.All;
     }
 
+    const seen = new Set();
     const options = [];
+
     if (isMin) options.push("below");
-    steps.forEach(range => {
+
+    for (const range of steps) {
       for (let val = range.min; val <= range.max; val += range.step) {
-        if (!isMin && val < minPrice) continue;
-        options.push(val);
+        if (!isMin) {
+          // keep values >= current min when building max options
+          const minNumeric = minPrice === "below" ? -Infinity : Number(minPrice);
+          if (val < minNumeric) continue;
+        }
+        if (!seen.has(val)) {
+          seen.add(val);
+          options.push(val);
+        }
       }
-    });
+    }
+
     if (!isMin) options.push("above");
     return options;
   };
@@ -237,20 +260,36 @@ const fetchProducts = (sort = null) => {
         <div className="card categories-card">
           <h3 className="card-title">Categories</h3>
           <ul className="category-list">
-            <li className={`category-item ${openCategory === "All" ? "open" : ""}`} onClick={() => { setOpenCategory("All"); setActiveSubcategoryId(null); }}>
+            <li
+              className={`category-item ${openCategory === "All" ? "open" : ""}`}
+              onClick={() => { setOpenCategory("All"); setActiveSubcategoryId(null); }}
+            >
               <div className="category-header"><span>All Categories</span></div>
             </li>
+
             {Object.entries(categories).map(([cat, { id, subcats }]) => (
               <li key={cat} className={`category-item ${openCategory === cat ? "open" : ""}`}>
-                <div className="category-header" onClick={() => { setOpenCategory(openCategory === cat ? null : cat); setActiveSubcategoryId(null); }}>
+                <div
+                  className="category-header"
+                  onClick={() => {
+                    setOpenCategory(openCategory === cat ? null : cat);
+                    setActiveSubcategoryId(null);
+                  }}
+                >
                   <span>{cat}</span>
                   {subcats.length > 0 && (openCategory === cat ? <FaChevronUp /> : <FaChevronDown />)}
                 </div>
+
                 {subcats.length > 0 && openCategory === cat && (
                   <ul className="subcategory-list">
                     {subcats.map((sub) => (
                       <li key={sub.id}>
-                        <span className="subcategory-link" onClick={() => setActiveSubcategoryId(Number(sub.id))}>{sub.name}</span>
+                        <span
+                          className="subcategory-link"
+                          onClick={() => setActiveSubcategoryId(Number(sub.id))}
+                        >
+                          {sub.name}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -262,63 +301,128 @@ const fetchProducts = (sort = null) => {
 
         <div className="card price-card">
           <h4 className="card-title">Filter by Price</h4>
+
           <div className="price-inputs">
-            <select value={minPrice} onChange={(e) => setMinPrice(e.target.value)}>
-              {generatePriceOptions(true).map(val => (
-                <option key={val} value={val}>
-                  {val === "below" ? `Below ₹${priceSteps[openCategory]?.[0]?.min || priceSteps.All[0].min}` : `₹${val}`}
+            <select
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value === "below" ? "below" : Number(e.target.value))}
+            >
+              {generatePriceOptions(true).map((val, i) => (
+                <option key={`${val}-${i}`} value={val}>
+                  {val === "below"
+                    ? `Below ₹${priceSteps[openCategory]?.[0]?.min || priceSteps.All[0].min}`
+                    : `₹${val}`}
                 </option>
               ))}
             </select>
-            <span>to</span>
-            <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}>
-              {generatePriceOptions(false).map(val => (
-                <option key={val} value={val}>
-                  {val === "above" ? `Above ₹${priceSteps[openCategory]?.[priceSteps[openCategory].length-1]?.max || priceSteps.All[priceSteps.All.length-1].max}` : `₹${val}`}
+
+            <select
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value === "above" ? "above" : Number(e.target.value))}
+            >
+              {generatePriceOptions(false).map((val, i) => (
+                <option key={`${val}-${i}`} value={val}>
+                  {val === "above"
+                    ? `Above ₹${priceSteps[openCategory]?.[priceSteps[openCategory].length - 1]?.max || priceSteps.All[priceSteps.All.length - 1].max}`
+                    : `₹${val}`}
                 </option>
               ))}
             </select>
           </div>
+
           <p className="price-text">
-            {minPrice === "below" ? `Below ₹${priceSteps[openCategory]?.[0]?.min || priceSteps.All[0].min}` : `₹${minPrice}`} to 
-            {maxPrice === "above" ? ` Above ₹${priceSteps[openCategory]?.[priceSteps[openCategory].length-1]?.max || priceSteps.All[priceSteps.All.length-1].max}` : ` ₹${maxPrice}`}
+            {minPrice === "below"
+              ? `Below ₹${priceSteps[openCategory]?.[0]?.min || priceSteps.All[0].min}`
+              : `₹${minPrice}`}{" "}
+            to
+            {maxPrice === "above"
+              ? ` Above ₹${priceSteps[openCategory]?.[priceSteps[openCategory].length - 1]?.max || priceSteps.All[priceSteps.All.length - 1].max}`
+              : ` ₹${maxPrice}`}
           </p>
         </div>
       </aside>
 
       <main className="product-main">
         <div className="topbar">
-          <h2>Explore All Products</h2>
+          <h2>Explore All Products {total ? `(${total} results)` : ""}</h2>
+
+          {/* Real sort dropdown */}
           <div className="dropdown">
-    <button 
-      className="dropdown-btn" 
-      onClick={() => fetchProducts("latest")}  // 🔥 always fetch latest
-    >
-      Latest Products ▼
-    </button>
-  </div>
+            <select
+              className="dropdown-btn"
+              onChange={(e) => fetchProducts(e.target.value)}
+              value={selectedFilter}
+            >
+              <option value="latest">Latest Products</option>
+              <option value="priceAsc">Price: Low → High</option>
+              <option value="priceDesc">Price: High → Low</option>
+              <option value="random">Random</option>
+            </select>
+          </div>
         </div>
 
         <div className="product-grid">
-          {products.length === 0 ? <p>No products found.</p> : products.map((p) => (
-            <div className="product-card" key={p._id}>
-              <img src={p.photos && p.photos.length > 0 ? p.photos[0] : "/defaultBG.jpg"} alt={p.title} className="product-img" onError={(e) => { e.target.src = "/defaultBG.jpg"; }} />
-              <div className="product-content">
-                <h3 className="product-title">{p.title}</h3>
-                <p className="product-price">₹ {p.price}</p>
-                <button
-                  className="add-btn"
-                  onClick={() => {
-                       navigate(`/product/${p._id}`)
-                        setResults([]);
-                        setQuery("");
-                      }}
-                    >
-                   View
-                </button>
+          {products.length === 0 ? (
+            <p>No products found.</p>
+          ) : (
+            products.map((p) => (
+              <div className="product-card" key={p._id}>
+                <img
+                  src={
+                    typeof p.photos?.[0] === "string" && /^https?:\/\//i.test(p.photos[0])
+                      ? p.photos[0]
+                      : "/defaultBG.jpg"
+                  }
+                  alt={p.title}
+                  className="product-img"
+                  onError={(e) => { e.currentTarget.src = "/defaultBG.jpg"; }}
+                />
+                <div className="product-content">
+                  <h3 className="product-title">{p.title}</h3>
+                  <p className="product-price">₹ {p.price}</p>
+                  <button
+                    className="add-btn"
+                    onClick={() => navigate(`/product/${p._id}`)}
+                  >
+                    View
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
+        </div>
+
+        {/* Pager */}
+        <div style={{display:"flex", gap:8, justifyContent:"center", alignItems:"center", marginTop:16, flexWrap:"wrap"}}>
+          <button
+            className="add-btn"
+            disabled={page <= 1 || selectedFilter === "random"}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            ‹ Prev
+          </button>
+
+          <span style={{padding: '6px 10px'}}>
+            Page {page}{total ? ` / ${Math.max(1, Math.ceil(total / pageSize))}` : ""}
+          </span>
+
+          <button
+            className="add-btn"
+            disabled={(page * pageSize) >= total || selectedFilter === "random"}
+            onClick={() => setPage(p => p + 1)}
+          >
+            Next ›
+          </button>
+
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+            style={{marginLeft: 8, padding: '6px'}}
+          >
+            <option value={12}>12</option>
+            <option value={24}>24</option>
+            <option value={48}>48</option>
+          </select>
         </div>
       </main>
     </div>

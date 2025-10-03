@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { Link } from "react-router-dom";
 import ChatBox from "../Component/ChatBox";
+import { Link } from "react-router-dom";
+import SmartPricingAdvisor from "../Component/SmartPricingAdvisor"; // add this import
 
 const ProductPage = () => {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -11,16 +12,15 @@ const ProductPage = () => {
   const [error, setError] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [chat, setChat] = useState(null);
+
   const navigate = useNavigate();
   const { productId } = useParams();
   const location = useLocation();
- 
-  
-  // New: seller state
+
+    // New: seller state
   const [seller, setSeller] = useState(null);
   const [sellerLoading, setSellerLoading] = useState(false);
   const [sellerError, setSellerError] = useState(null);
-
   // Track Firebase login
   useEffect(() => {
     const auth = getAuth();
@@ -99,6 +99,8 @@ const ProductPage = () => {
       .finally(() => setSellerLoading(false));
   }, [product]);
 
+
+
   if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
   if (!product) return <p>Loading...</p>;
 
@@ -148,8 +150,6 @@ const ProductPage = () => {
     }
   };
 
- 
-
   return (
     <div className="product-details">
       <h1>{product.title}</h1>
@@ -159,7 +159,7 @@ const ProductPage = () => {
           {product.photos.map((photo, index) => (
             <img
               key={index}
-              src={photo}
+              src={photo.url}
               alt={`${product.title} - ${index + 1}`}
               className="product-image-large"
               onError={(e) => {
@@ -171,9 +171,11 @@ const ProductPage = () => {
       )}
       <p>{product.description}</p>
       <p>Price: ₹{product.price}</p>
-       {product.ratings && <p>Ratings: {product.ratings}</p>}
+      {/* Smart Pricing Advisor block */}
+      <SmartPricingAdvisor product={product} />
+      {product.ratings && <p>Ratings: {product.ratings}</p>}
       {product.sub_category && <p>Category: {product.sub_category}</p>}
-      {/* SELLER SECTION */}
+       {/* SELLER SECTION */}
       <section className="seller-section" style={{ marginTop: 20 }}>
         <h2>Seller</h2>
 
@@ -210,7 +212,6 @@ const ProductPage = () => {
           </div>
         )}
       </section>
-
       <button onClick={handleChat}>Chat</button>
 
       {showChat && chat && (

@@ -1,13 +1,16 @@
 const mongoose = require("mongoose");
 
+const photoSchema = new mongoose.Schema({
+  url: { type: String, required: true },
+  embedding: { type: [Number], default: [] }, 
+});
 const productSchema = new mongoose.Schema({
   categoryId: Number,
   title: String,
   description: String,
   price: Number,
-     
   attributes: Object,
-  photos: [String],
+  photos: [photoSchema], 
   
   createdAt: { type: Date, default: Date.now },
   
@@ -38,4 +41,5 @@ const productSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model("Products", productSchema);
+module.exports = mongoose.model("Product", productSchema, "products");
+

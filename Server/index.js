@@ -11,6 +11,8 @@ const { router: productRoutes, setCollection } = require("./routes/productRoutes
 const sellRoutes = require("./routes/sellRoutes");
 const updateProfile = require("./routes/updateProfile");
 const chatRoutes = require("./routes/chatRoutes");  
+const pricingRoute = require('./routes/pricing'); //pricing
+console.log("[index] pricingRoute typeof:", typeof pricingRoute);
 const app = express();
 
 app.use(cors());
@@ -27,6 +29,8 @@ app.use("/api/sell", sellRoutes);
 app.use("/api/users", updateProfile);
 app.use("/api/chats", chatRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use('/api/pricing', pricingRoute);  //pricing route
+console.log("[index] mounted /api/pricing");
 
 
 app.get("/", (req, res) => {

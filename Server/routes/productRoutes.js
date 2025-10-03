@@ -15,112 +15,98 @@ router.get("/test", (req, res) => {
   res.send("Product route working!");
 });
 
-router.get("/fetchProducts", async (req, res) => {
-  try {
-    if (!productsCollection) {
-      return res.status(500).json({ message: "Collection not set" });
-    }
-
-    let { categoryId, price ,sort} = req.query;
-    let filter = {};
-
-    // Convert categoryId from string to number
-    if (categoryId) {
-      categoryId = Number(categoryId);
-      filter.categoryId = categoryId;  // ✅ now matches number type in DB
-    }
-
-    // Apply price filter (optional)
-    if (price) {
-      filter.price = { $lte: Number(price) };
-    }
-
-    
-    console.log("👉 Filter being applied:", filter); // debug
-
-    //const products = await productsCollection.find(filter).toArray();
-    // Use aggregation with $match + $sample
-  //   const products = await productsCollection
-  //     .aggregate([
-  //   { $match: filter },
-  //   { $addFields: { rand: { $rand: {} } } }, // add random field
-  //   { $sort: { rand: 1 } },                  // sort randomly
-  //   { $project: { rand: 0 } }                // remove helper field
-  // ])
-  // .toArray();
-
-   let products;
-
-    if (sort === "latest") {
-      products = await productsCollection
-        .find(filter)
-        .sort({ createdAt: -1 }) // newest first
-        .toArray();
-    } else {
-      products = await productsCollection
-        .aggregate([
-          { $match: filter },
-          { $addFields: { rand: { $rand: {} } } },
-          { $sort: { rand: 1 } },
-          { $project: { rand: 0 } }
-        ])
-        .toArray();
-    }
-
-    res.status(200).json(products);
-   
-  } catch (err) {
-    console.error("❌ Error fetching products:", err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
 // ➡️ ADD PRODUCT WITH CLOUDINARY UPLOAD
-router.post("/addProduct", async (req, res) => {
+router.get("/fetchProducts", async (req, res) => {
+  console.log("🟢 /fetchProducts v3", { sort: req.query.sort || "latest" });
+
   try {
     if (!productsCollection) {
-      return res.status(500).json({ message: "Collection not set" });
+      return res.status(500).json({ ok: false, error: "Collection not set" });
     }
 
-    const { title, description, price, categoryId, seller } = req.body;
+    const {
+      categoryId,
+      minPrice,
+      maxPrice,
+      sort = "latest",   // "latest" | "priceAsc" | "priceDesc" | "random"
+      page = "1",
+      limit = "24",
+    } = req.query;
 
-    if (!req.files || !req.files.photos) {
-      return res.status(400).json({ message: "No photos uploaded" });
+    // ---------- Build filter ----------
+    const q = {};
+    if (categoryId != null && categoryId !== "") {
+      const catNum = Number(categoryId);
+      q.categoryId = Number.isNaN(catNum) ? categoryId : catNum;
     }
 
-    // handle single or multiple files
-    const files = Array.isArray(req.files.photos)
-      ? req.files.photos
-      : [req.files.photos];
-
-    const uploadedUrls = [];
-    for (const file of files) {
-      const url = await uploadToCloudinary(file, "products");
-      uploadedUrls.push(url);
+    const min = Number(minPrice);
+    const max = Number(maxPrice);
+    if (!Number.isNaN(min) || !Number.isNaN(max)) {
+      q.price = {};
+      if (!Number.isNaN(min)) q.price.$gte = min;
+      if (!Number.isNaN(max)) q.price.$lte = max;
+      if (Object.keys(q.price).length === 0) delete q.price;
     }
 
-    const newProduct = {
-      title,
-      description,
-      price: Number(price),
-      categoryId: Number(categoryId),
-      seller: new ObjectId(seller),
-      photos: uploadedUrls,
-      createdAt: new Date(),
+    console.log("👉 Filter being applied (v3):", q);
+
+    // ---------- Pagination ----------
+    const pageNum  = Math.max(1, Number(page) || 1);
+    const pageSize = Math.min(60, Math.max(1, Number(limit) || 24));
+    const skip     = (pageNum - 1) * pageSize;
+
+    // ---------- Projection (lightweight) ----------
+    const projection = {
+      title: 1,
+      price: 1,
+      city: 1,
+      state: 1,
+      createdAt: 1,
+      //photos: { $slice: ["$photos", 1] }, // only first photo
+      photos: { $slice: ["$photos.url", 1] } ,
     };
 
-    const result = await productsCollection.insertOne(newProduct);
+    // ---------- Fast paths (index-backed) ----------
+    if (sort === "latest" || sort === "priceAsc" || sort === "priceDesc") {
+      const sortSpec =
+        sort === "latest"   ? { createdAt: -1 } :
+        sort === "priceAsc" ? { price: 1 } :
+                              { price: -1 };
 
-    res.status(201).json({
-      message: "✅ Product added successfully",
-      productId: result.insertedId,
-      photos: uploadedUrls,
-    });
+      const total = await productsCollection.countDocuments(q);
+      const data  = await productsCollection
+        .find(q, { projection })
+        .sort(sortSpec)              // ✅ uses index if present
+        .skip(skip)
+        .limit(pageSize)
+        .toArray();
+
+      return res.json({ ok: true, page: pageNum, limit: pageSize, total, data });
+    }
+
+    // ---------- Random WITHOUT $rand sort ----------
+    // Use $sample with a bounded size (no sort, no memory blowups)
+    const sampleSize = Math.min(pageSize, 40);
+    const pipeline = [
+      { $match: q },
+      { $sample: { size: sampleSize } },
+      { $project: projection },
+    ];
+
+    const data  = await productsCollection
+      .aggregate(pipeline, { allowDiskUse: true }) // ✅ safeguard
+      .toArray();
+    const total = await productsCollection.countDocuments(q);
+
+    return res.json({ ok: true, page: 1, limit: sampleSize, total, data });
+
   } catch (err) {
-    console.error("❌ Error adding product:", err);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("❌ fetchProducts error (v3):", err);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 
 // SEARCH products with Atlas Search autocomplete
