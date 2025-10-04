@@ -17,13 +17,16 @@ const Profile = () => {
   const [mongoId, setMongoId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
-  const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
   const [userProducts, setUserProducts] = useState([]);
   const [showUserProducts, setShowUserProducts] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("profileInfo"); // default tab
 
-  const DEFAULT_PROFILE_IMAGE = "/defaultProfile.jpg";
+  
+
+  const DEFAULT_PROFILE_IMAGE = "/defaultProfile.png";
+
   const DEFAULT_PRODUCT_IMAGE = "/defaultBG.jpg";
 
   const [formData, setFormData] = useState({
@@ -59,19 +62,16 @@ const Profile = () => {
         return res.json();
       })
       .then((data) => {
-        setFormData((prev) => ({
-          ...prev,
+        setFormData({
           name: data.name || "",
           phone: data.phone || "",
           aboutMe: data.aboutMe || "",
           city: data.city || "",
           state: data.state || "",
           locationMode: data.locationMode || "manual",
-          manualLocation:
-            data.manualLocation || { address: "", pincode: "" },
-          gpsLocation:
-            data.gpsLocation || { type: "Point", coordinates: [0, 0] },
-        }));
+          manualLocation: data.manualLocation || { address: "", pincode: "" },
+          gpsLocation: data.gpsLocation || { type: "Point", coordinates: [0, 0] },
+        });
         setMongoId(data._id);
       })
       .catch((err) => console.error("Error fetching user data:", err));
@@ -128,6 +128,7 @@ const Profile = () => {
       const data = await res.json();
       setUserProducts(data);
       setShowUserProducts(true);
+      setActiveTab("myProducts");
     } catch (err) {
       console.error(err);
       alert("Failed to load your products");
@@ -184,7 +185,8 @@ const Profile = () => {
       const data = await res.json();
       if (res.ok) {
         setMessage("Profile updated successfully");
-        setShowForm(false);
+         setActiveTab("profileInfo");
+      
       } else {
         console.error("Failed to update profile:", data.message);
         setMessage("Failed to update profile");
@@ -195,259 +197,183 @@ const Profile = () => {
     }
   };
 
-  return (
+   return (
     <div className="profile-wrapper">
-      <div className="profile-frame">
-        <div className="container mt-4 profile-container">
-          {user ? (
-            <div className="row">
-              {/* LEFT SIDE */}
-              <div className="col-md-4 text-center border-end">
-                <img
-                  src={preview || DEFAULT_PROFILE_IMAGE}
-                  alt="Profile"
-                  className="img-fluid rounded-circle mb-3"
-                  style={{
-                    width: "150px",
-                    height: "150px",
-                    objectFit: "cover",
-                  }}
-                  onError={(e) => {
-                    e.target.src = DEFAULT_PROFILE_IMAGE;
-                  }}
-                />
-
-                <div className="mb-3">
-                  <input
-                    type="file"
-                    id="fileUpload"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: "none" }}
-                  />
-                  <label
-                    htmlFor="fileUpload"
-                    className="btn btn-custom btn-outline-primary w-100"
-                  >
-                    Upload New Photo
-                  </label>
+      <div className="container py-5 profile-container">
+        {user ? (
+          <div className="row g-4">
+            {/* SIDEBAR */}
+            <div className="col-md-4">
+              {/* Top Card: Photo, Name, Email */}
+              <div className="card text-center mb-3">
+                <div className="card-body">
+                  <div className="profile-image-container position-relative mx-auto mb-2">
+                    <img
+                      src={preview}
+                      alt="Profile"
+                      className="profile-image"
+                      onError={(e) => (e.target.src = DEFAULT_PROFILE_IMAGE)}
+                    />
+                    <label
+                      htmlFor="fileUpload"
+                      className="upload-overlay d-flex align-items-center justify-content-center"
+                    >
+                      <input
+                        type="file"
+                        id="fileUpload"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        hidden
+                      />
+                      <span className="text-white fw-bold">Change</span>
+                    </label>
+                  </div>
+                  <h5 className="card-title">{user.displayName || "User"}</h5>
+                  <p className="text-muted">{user.email}</p>
                   {selectedImage && (
                     <button
-                      className="btn btn-custom btn-success mt-2 w-100"
+                      className="btn btn-success w-100 mt-2"
                       onClick={handleUpload}
                     >
                       Save Photo
                     </button>
                   )}
                 </div>
-
-                <button
-                  className="btn btn-custom btn-primary w-100 mb-2"
-                  onClick={() => setShowForm(!showForm)}
-                >
-                  {showForm ? "Cancel" : "Update Profile"}
-                </button>
-
-                <button
-                  className="btn btn-custom btn-info w-100 mb-2"
-                  onClick={fetchUserProducts}
-                >
-                  Your Products
-                </button>
-                <button
-                  className="btn btn-custom btn-danger w-100"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
               </div>
 
-              {/* RIGHT SIDE */}
-              <div className="col-md-8 ps-4">
-                <h2>Welcome, {user.displayName || "User"}</h2>
-                <p>Email: {user.email}</p>
+              {/* Bottom Card: Navigation */}
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-2">
+                  <button
+                    className={`sidebar-btn text-start ${activeTab === "profileInfo" ? "active-tab" : ""}`}
+                    onClick={() => setActiveTab("profileInfo")}
+                  >
+                    Profile Info
+                  </button>
+                  <button
+                    className={`sidebar-btn text-start ${activeTab === "updateProfile" ? "active-tab" : ""}`}
+                    onClick={() => setActiveTab("updateProfile")}
+                  >
+                    Update Profile
+                  </button>
+                  <button
+                    className={`sidebar-btn text-start ${activeTab === "myProducts" ? "active-tab" : ""}`}
+                    onClick={fetchUserProducts}
+                  >
+                    My Products
+                  </button>
+                  <button
+                    className={`sidebar-btn text-start ${activeTab === "wishlist" ? "active-tab" : ""}`}
+                    onClick={() => setActiveTab("wishlist")}
+                  >
+                    My Wishlist
+                  </button>
+                  <button
+                    className="btn btn-light text-start text-danger mt-2"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                {message && (
-                  <div className="alert alert-info mt-3">{message}</div>
-                )}
+            {/* MAIN CONTENT */}
+            <div className="col-md-8">
+              {message && <div className="alert alert-info">{message}</div>}
 
-                {/* Update form */}
-                {showForm && (
-                  <form className="mt-4" onSubmit={handleUpdateProfile}>
-                    <div className="mb-3">
-                      <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        placeholder="Enter your name"
-                        value={formData.name}
-                        onChange={handleChange}
-                      />
+              {activeTab === "profileInfo" && (
+                <div className="card p-4">
+                  <h4>Profile Information</h4>
+                  <p><strong>Name:</strong> {formData.name}</p>
+                  <p><strong>Phone:</strong> {formData.phone}</p>
+                  <p><strong>About Me:</strong> {formData.aboutMe}</p>
+                  <p><strong>City:</strong> {formData.city}</p>
+                  <p><strong>State:</strong> {formData.state}</p>
+                </div>
+              )}
+
+               {activeTab === "updateProfile" && (
+                <form className="card p-4" onSubmit={handleUpdateProfile}>
+                  <h4>Update Profile</h4>
+                  <div className="mb-3">
+                    <input type="text" name="name" className="form-control" placeholder="Enter your name" value={formData.name} onChange={handleChange} />
+                  </div>
+                  <div className="mb-3">
+                    <input type="text" name="phone" className="form-control" placeholder="Phone" value={formData.phone} onChange={handleChange} />
+                  </div>
+                  <div className="mb-3">
+                    <textarea name="aboutMe" className="form-control" placeholder="About me..." value={formData.aboutMe} onChange={handleChange} />
+                  </div>
+
+                  <div className="mb-3 d-flex gap-3">
+                    <div className="form-check">
+                      <input type="radio" className="form-check-input" checked={formData.locationMode === "manual"} onChange={() => setFormData({ ...formData, locationMode: "manual" })} />
+                      <label className="form-check-label">Manual</label>
                     </div>
-
-                    <div className="mb-3">
-                      <input
-                        type="text"
-                        name="phone"
-                        className="form-control"
-                        placeholder="Enter phone number"
-                        value={formData.phone}
-                        onChange={handleChange}
-                      />
+                    <div className="form-check">
+                      <input type="radio" className="form-check-input" checked={formData.locationMode === "gps"} onChange={() => setFormData({ ...formData, locationMode: "gps" })} />
+                      <label className="form-check-label">GPS</label>
                     </div>
+                  </div>
 
-                    <div className="mb-3">
-                      <textarea
-                        name="aboutMe"
-                        className="form-control"
-                        placeholder="About me..."
-                        value={formData.aboutMe}
-                        onChange={handleChange}
-                      />
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="form-check form-check-inline">
-                        <input
-                          type="radio"
-                          className="form-check-input"
-                          checked={formData.locationMode === "manual"}
-                          onChange={() =>
-                            setFormData({
-                              ...formData,
-                              locationMode: "manual",
-                            })
-                          }
-                        />
-                        <label className="form-check-label">Manual</label>
-                      </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          type="radio"
-                          className="form-check-input"
-                          checked={formData.locationMode === "gps"}
-                          onChange={() =>
-                            setFormData({ ...formData, locationMode: "gps" })
-                          }
-                        />
-                        <label className="form-check-label">GPS</label>
-                      </div>
-                    </div>
-
-                    {formData.locationMode === "manual" && (
-                      <>
-                        <div className="row">
-                          <div className="col-md-6 mb-3">
-                            <input
-                              type="text"
-                              name="city"
-                              className="form-control"
-                              placeholder="City"
-                              value={formData.city}
-                              onChange={handleChange}
-                            />
-                          </div>
-                          <div className="col-md-6 mb-3">
-                            <input
-                              type="text"
-                              name="state"
-                              className="form-control"
-                              placeholder="State"
-                              value={formData.state}
-                              onChange={handleChange}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <input
-                            type="text"
-                            name="address"
-                            className="form-control"
-                            placeholder="Address"
-                            value={formData.manualLocation.address}
-                            onChange={handleManualLocationChange}
-                          />
-                        </div>
-                        <div className="mb-3">
-                          <input
-                            type="text"
-                            name="pincode"
-                            className="form-control"
-                            placeholder="Pincode"
-                            value={formData.manualLocation.pincode}
-                            onChange={handleManualLocationChange}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {formData.locationMode === "gps" && (
-                      <>
-                        <div className="mb-3">
-                          <button
-                            type="button"
-                            className="btn btn-warning"
-                            onClick={handleGetGPS}
-                          >
-                            Get My GPS Location
-                          </button>
-                        </div>
-                        {formData.gpsLocation.coordinates[0] !== 0 && (
-                          <p>
-                            Lat: {formData.gpsLocation.coordinates[1]}, Lng:{" "}
-                            {formData.gpsLocation.coordinates[0]}
-                          </p>
-                        )}
-                      </>
-                    )}
-
-                    <div className="mt-3">
-                      <button type="submit" className="btn btn-success w-100">
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {showUserProducts && (
-                  <div className="mt-4">
-                    <h3 className="mb-3">Your Products</h3>
-                    {productsLoading ? (
-                      <p>Loading...</p>
-                    ) : userProducts.length === 0 ? (
-                      <p>You have not posted any products yet.</p>
-                    ) : (
+                  {formData.locationMode === "manual" && (
+                    <>
                       <div className="row">
-                        {userProducts.map((p) => (
-                          <div key={p._id} className="col-md-6 mb-4">
-                            <div className="card h-100 shadow-sm border-0 rounded-3">
-                              <img
+                        <div className="col-md-6 mb-3">
+                          <input type="text" name="city" className="form-control" placeholder="City" value={formData.city} onChange={handleChange} />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <input type="text" name="state" className="form-control" placeholder="State" value={formData.state} onChange={handleChange} />
+                        </div>
+                      </div>
+                      <input type="text" name="address" className="form-control mb-3" placeholder="Address" value={formData.manualLocation.address} onChange={handleManualLocationChange} />
+                      <input type="text" name="pincode" className="form-control mb-3" placeholder="Pincode" value={formData.manualLocation.pincode} onChange={handleManualLocationChange} />
+                    </>
+                  )}
+
+                  {formData.locationMode === "gps" && (
+                    <div className="mb-3">
+                      <button type="button" className="btn" onClick={handleGetGPS}>Get My GPS Location</button>
+                      {formData.gpsLocation.coordinates[0] !== 0 && (
+                        <p className="mt-2">Lat: {formData.gpsLocation.coordinates[1]}, Lng: {formData.gpsLocation.coordinates[0]}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn w-100">Save Changes</button>
+                </form>
+              )}
+
+              {activeTab === "myProducts" && (
+                <div className="products-section">
+                  <h4>My Products</h4>
+                  {productsLoading ? (
+                    <p>Loading...</p>
+                  ) : userProducts.length === 0 ? (
+                    <p>No products yet.</p>
+                  ) : (
+                    <div className="row g-3">
+                      {userProducts.map((p) => (
+                        <div key={p._id} className="col-md-6">
+                          <div className="card h-100">
+                             <img
                                 src={
                                   p.photos && p.photos.length > 0
                                     ? p.photos[0]
                                     : DEFAULT_PRODUCT_IMAGE
                                 }
-                                className="card-img-top"
+                                
                                 alt={p.title}
-                                style={{
-                                  height: "200px",
-                                  objectFit: "cover",
-                                  borderTopLeftRadius: "0.5rem",
-                                  borderTopRightRadius: "0.5rem",
-                                }}
+                              
                                 onError={(e) => {
                                   e.target.src = DEFAULT_PRODUCT_IMAGE;
                                 }}
                               />
-                              <div className="card-body d-flex flex-column">
-                                <h5 className="card-title text-truncate">
-                                  {p.title}
-                                </h5>
-                                <p className="card-text fw-bold text-success mb-2">
-                                  ₹ {p.price}
-                                </p>
-                                <p className="card-text small text-muted flex-grow-1">
+                            <div className="card-body">
+                              <h5 className="card-title">{p.title}</h5>
+                              <p className="text-success">₹ {p.price}</p>
+                               <p className="card-text small text-muted flex-grow-1">
                                   {p.description
                                     ? p.description.substring(0, 60) + "..."
                                     : "No description"}
@@ -460,21 +386,26 @@ const Profile = () => {
                                 >
                                   View Details
                                 </button>
-                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "wishlist" && (
+                <div className="card p-4">
+                  <h4>My Wishlist</h4>
+                  <p>No items in wishlist.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <p className="text-center">You are not logged in.</p>
-          )}
-        </div>
-        <div className="profile-frame"></div>
+          </div>
+        ) : (
+          <p className="text-center mt-5">You are not logged in.</p>
+        )}
       </div>
     </div>
   );
