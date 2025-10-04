@@ -1,0 +1,106 @@
+/* Container */
+.seller-profile-container {
+  max-width: 900px;
+  margin: 40px auto;
+  font-family: 'Inter', sans-serif;
+  padding: 0 20px;
+}
+
+/* Back link */
+.seller-profile-back {
+  text-decoration: none;
+  color: #0b1d39;
+  font-weight: 500;
+  margin-bottom: 20px;
+  display: inline-block;
+  transition: color 0.3s;
+}
+
+.seller-profile-back:hover {
+  color: #ff6600;
+}
+
+/* Main card */
+.seller-profile-main {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.seller-profile-main:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+/* Avatar */
+.seller-profile-avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.seller-profile-avatar {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #0b1d39;
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.seller-profile-avatar:hover {
+  transform: scale(1.05);
+  border-color: #ff6600;
+}
+
+/* Info section */
+.seller-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seller-profile-info h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #0b1d39;
+}
+
+.seller-profile-info h3 {
+  margin: 10px 0 5px 0;
+  font-size: 1.2rem;
+  color: #ff6600;
+}
+
+.seller-profile-info p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Contact details */
+.seller-profile-contact {
+  margin-top: 15px;
+}
+
+.seller-profile-contact p {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-weight: 500;
+  color: #0b1d39;
+}
+
+/* Loading and error messages */
+.seller-profile-message,
+.seller-profile-error {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #ff3300;
+  margin-top: 20px;
+}

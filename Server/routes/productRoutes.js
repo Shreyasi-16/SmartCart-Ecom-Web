@@ -1,21 +1,19 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
-const uploadToCloudinary = require("../config/cloudinary"); // adjust path
+const uploadToCloudinary = require("../config/cloudinary");
 const fileUpload = require("express-fileupload");
 const router = express.Router();
-let productsCollection; // Will be set from index.js
+let productsCollection;
+
 router.use(fileUpload());
 
-// Allow index.js to set the collection
 function setCollection(collection) {
   productsCollection = collection;
 }
 
-router.get("/test", (req, res) => {
-  res.send("Product route working!");
-});
+router.get("/test", (req, res) => res.send("Product route working!"));
 
-// ➡️ ADD PRODUCT WITH CLOUDINARY UPLOAD
+// GET /products/fetchProducts  (NO pagination)
 router.get("/fetchProducts", async (req, res) => {
   console.log("🟢 /fetchProducts v3", { sort: req.query.sort || "latest" });
 
@@ -28,18 +26,16 @@ router.get("/fetchProducts", async (req, res) => {
       categoryId,
       minPrice,
       maxPrice,
-      sort = "latest",   // "latest" | "priceAsc" | "priceDesc" | "random"
-      page = "1",
-      limit = "24",
+      sort = "latest", // "latest" | "priceAsc" | "priceDesc" | "random"
+      // page, limit ← removed
     } = req.query;
 
-    // ---------- Build filter ----------
+    // ---- Filter
     const q = {};
     if (categoryId != null && categoryId !== "") {
       const catNum = Number(categoryId);
       q.categoryId = Number.isNaN(catNum) ? categoryId : catNum;
     }
-
     const min = Number(minPrice);
     const max = Number(maxPrice);
     if (!Number.isNaN(min) || !Number.isNaN(max)) {
@@ -51,76 +47,77 @@ router.get("/fetchProducts", async (req, res) => {
 
     console.log("👉 Filter being applied (v3):", q);
 
-    // ---------- Pagination ----------
-    const pageNum  = Math.max(1, Number(page) || 1);
-    const pageSize = Math.min(60, Math.max(1, Number(limit) || 24));
-    const skip     = (pageNum - 1) * pageSize;
-
-    // ---------- Projection (lightweight) ----------
-    const projection = {
+    // ---- Projection
+    const findProjection = {
       title: 1,
       price: 1,
       city: 1,
       state: 1,
       createdAt: 1,
-      //photos: { $slice: ["$photos", 1] }, // only first photo
-      photos: { $slice: ["$photos.url", 1] } ,
+      photos: { $slice: 1 },
+    };
+    const aggProject = {
+      title: 1,
+      price: 1,
+      city: 1,
+      state: 1,
+      createdAt: 1,
+      photos: { $slice: ["$photos.url", 1] }, // keep your original shape
     };
 
-    // ---------- Fast paths (index-backed) ----------
-    if (sort === "latest" || sort === "priceAsc" || sort === "priceDesc") {
+    // ---- Sorted (index-backed)
+    if (["latest", "priceAsc", "priceDesc"].includes(sort)) {
       const sortSpec =
-        sort === "latest"   ? { createdAt: -1 } :
+        sort === "latest" ? { createdAt: -1 } :
         sort === "priceAsc" ? { price: 1 } :
-                              { price: -1 };
+        { price: -1 };
 
-      const total = await productsCollection.countDocuments(q);
-      const data  = await productsCollection
-        .find(q, { projection })
-        .sort(sortSpec)              // ✅ uses index if present
-        .skip(skip)
-        .limit(pageSize)
+      const data = await productsCollection
+        .find(q, { projection: findProjection })
+        .sort(sortSpec)
         .toArray();
 
-      return res.json({ ok: true, page: pageNum, limit: pageSize, total, data });
+      return res.json({ ok: true, total: data.length, data });
     }
 
-    // ---------- Random WITHOUT $rand sort ----------
-    // Use $sample with a bounded size (no sort, no memory blowups)
-    const sampleSize = Math.min(pageSize, 40);
-    const pipeline = [
-      { $match: q },
-      { $sample: { size: sampleSize } },
-      { $project: projection },
-    ];
+    // ---- Random (no pagination): shuffle all matched docs
+    if (sort === "random") {
+      const total = await productsCollection.countDocuments(q);
+      if (!total) return res.json({ ok: true, total: 0, data: [] });
 
-    const data  = await productsCollection
-      .aggregate(pipeline, { allowDiskUse: true }) // ✅ safeguard
+      const pipeline = [
+        { $match: q },
+        { $sample: { size: total } }, // randomize all
+        { $project: aggProject },
+      ];
+      const data = await productsCollection.aggregate(pipeline, { allowDiskUse: true }).toArray();
+      return res.json({ ok: true, total: data.length, data });
+    }
+
+    // ---- Fallback → latest
+    const data = await productsCollection
+      .find(q, { projection: findProjection })
+      .sort({ createdAt: -1 })
       .toArray();
-    const total = await productsCollection.countDocuments(q);
 
-    return res.json({ ok: true, page: 1, limit: sampleSize, total, data });
-
+    return res.json({ ok: true, total: data.length, data });
   } catch (err) {
     console.error("❌ fetchProducts error (v3):", err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-
-
-// SEARCH products with Atlas Search autocomplete
+// SEARCH (unchanged)
 router.get("/search", async (req, res) => {
   try {
     const { query } = req.query;
-
     const aggregationPipeline = [
       {
         $search: {
           index: "search_index",
           compound: {
             should: [
-              { autocomplete: { query, path: "title", fuzzy: { maxEdits: 1 } } },
+              { autocomplete: { query, path: "title",       fuzzy: { maxEdits: 1 } } },
               { autocomplete: { query, path: "description", fuzzy: { maxEdits: 1 } } }
             ],
             minimumShouldMatch: 1
@@ -129,42 +126,27 @@ router.get("/search", async (req, res) => {
       },
       { $limit: 6 }
     ];
-
     const results = await productsCollection.aggregate(aggregationPipeline).toArray();
-   res.status(200).json(results);
-
+    res.status(200).json(results);
   } catch (err) {
-    console.error('❌ Error during search:', err);
+    console.error("❌ Error during search:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// GET products by seller MongoDB ObjectId
+// seller products (unchanged)
 router.get("/user/:sellerId", async (req, res) => {
   try {
     if (!productsCollection) {
       return res.status(500).json({ message: "Collection not set" });
     }
-
     const { sellerId } = req.params;
-
     let sellerObjectId;
-    try {
-      // Convert to ObjectId
-      sellerObjectId = new ObjectId(sellerId);
-    } catch {
-      return res.status(400).json({ message: "Invalid seller ID" });
-    }
+    try { sellerObjectId = new ObjectId(sellerId); }
+    catch { return res.status(400).json({ message: "Invalid seller ID" }); }
 
-    // Query using the ObjectId
-    const products = await productsCollection
-      .find({ seller: sellerObjectId })
-      .toArray();
-
-    if (!products.length) {
-      return res.status(404).json({ message: "No products found for this seller" });
-    }
-
+    const products = await productsCollection.find({ seller: sellerObjectId }).toArray();
+    if (!products.length) return res.status(404).json({ message: "No products found for this seller" });
     res.status(200).json(products);
   } catch (err) {
     console.error("❌ Error fetching user products:", err);
@@ -172,24 +154,17 @@ router.get("/user/:sellerId", async (req, res) => {
   }
 });
 
-// GET product by ID
+// product by id (unchanged)
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!productsCollection) {
-      return res.status(500).json({ message: "Collection not set" });
-    }
+    if (!productsCollection) return res.status(500).json({ message: "Collection not set" });
 
     let mongoQuery;
-    try {
-      mongoQuery = { _id: new ObjectId(id) };
-    } catch {
-      mongoQuery = { _id: id };
-    }
+    try { mongoQuery = { _id: new ObjectId(id) }; }
+    catch { mongoQuery = { _id: id }; }
 
     const result = await productsCollection.findOne(mongoQuery);
-
     if (!result) return res.status(404).json({ message: "Product not found" });
     res.status(200).json({ data: result });
   } catch (err) {
@@ -197,11 +172,5 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-
-
-
-
-
 
 module.exports = { router, setCollection };

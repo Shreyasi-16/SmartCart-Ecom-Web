@@ -1,0 +1,91 @@
+.advisor-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+  
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  background-color: #fff;
+  width: 48%;
+}
+
+.advisor-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.advisor-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #0b1d39;
+}
+
+.advisor-subtitle {
+  font-size: 14px;
+  color: #0b1d39;
+  margin-top: 4px;
+}
+
+.advisor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #0b1d39;
+}
+
+.advisor-btn {
+  margin-top: 16px;
+  background: #0b1d39;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.advisor-btn:hover {
+  background: #ff6600;
+}
+
+.advisor-btn:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.advisor-error {
+  color: #b91c1c;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.advisor-output {
+  margin-top: 16px;
+}
+
+.advisor-suggested {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0b1d39;
+}
+
+.advisor-range {
+  color: #0b1d39;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.advisor-explanation {
+  margin-top: 8px;
+  color: #0b1d39;
+  font-size: 14px;
+}
+
+.advisor-details {
+  margin-top: 10px;
+  font-size: 14px;
+}

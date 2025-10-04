@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./Product.css";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
+import { FaHeart, FaShoppingCart } from "react-icons/fa";
 
 export default function Product() {
   const [products, setProducts] = useState([]);
@@ -11,12 +12,6 @@ export default function Product() {
   const [openCategory, setOpenCategory]               = useState("All");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState("random");
-
-
-  // paging
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
-  const [total, setTotal] = useState(0);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -169,7 +164,7 @@ export default function Product() {
     setMaxPrice(steps[steps.length - 1].max);
   }, [openCategory, activeSubcategoryId]);
 
-  // Build and fetch
+  // Build and fetch (no pagination)
   const fetchProducts = (sort = "latest") => {
     setSelectedFilter(sort);
 
@@ -187,8 +182,6 @@ export default function Product() {
     }
 
     params.set("sort", sort);
-    params.set("page", String(page));
-    params.set("limit", String(pageSize));
 
     const url = `http://localhost:5000/products/fetchProducts?${params.toString()}`;
 
@@ -198,24 +191,18 @@ export default function Product() {
         if (!res.ok) throw new Error("Failed to fetch products");
         return res.json();
       })
-      .then(({ data, total: t }) => {
-        setTotal(t || 0);
+      .then(({ data }) => {
         setProducts(data || []);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   };
 
-  // Reset to page 1 when filters/sort change
-  useEffect(() => {
-    setPage(1);
-  }, [minPrice, maxPrice, activeSubcategoryId, openCategory, selectedFilter]);
-
-  // Initial + whenever filters/page/pageSize change
+  // Initial + whenever filters/sort change (no page deps)
   useEffect(() => {
     fetchProducts(selectedFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minPrice, maxPrice, activeSubcategoryId, openCategory, selectedFilter, page, pageSize]);
+  }, [minPrice, maxPrice, activeSubcategoryId, openCategory, selectedFilter]);
 
   if (loading) return <div className="loader-container"><div className="loader"></div></div>;
   if (error)   return <p style={{ color: "red" }}>Error: {error}</p>;
@@ -344,7 +331,7 @@ export default function Product() {
 
       <main className="product-main">
         <div className="topbar">
-          <h2>Explore All Products {total ? `(${total} results)` : ""}</h2>
+          <h2>Explore All Products {products.length ? `(${products.length} results)` : ""}</h2>
 
           {/* Real sort dropdown */}
           <div className="dropdown">
@@ -368,15 +355,20 @@ export default function Product() {
             products.map((p) => (
               <div className="product-card" key={p._id}>
                 <img
-                  src={
-                    typeof p.photos?.[0] === "string" && /^https?:\/\//i.test(p.photos[0])
-                      ? p.photos[0]
-                      : "/defaultBG.jpg"
-                  }
+                  src={typeof p.photos?.[0] === "string" && /^https?:\/\//i.test(p.photos[0])
+                    ? p.photos[0]
+                    : "/defaultBG.jpg"}
                   alt={p.title}
                   className="product-img"
                   onError={(e) => { e.currentTarget.src = "/defaultBG.jpg"; }}
                 />
+
+                {/* Heart + Cart buttons */}
+                <div className="card-actions">
+                  <FaHeart className="icon-heart" />
+                  <FaShoppingCart className="icon-cart" />
+                </div>
+
                 <div className="product-content">
                   <h3 className="product-title">{p.title}</h3>
                   <p className="product-price">₹ {p.price}</p>
@@ -384,7 +376,7 @@ export default function Product() {
                     className="add-btn"
                     onClick={() => navigate(`/product/${p._id}`)}
                   >
-                    View
+                    View product
                   </button>
                 </div>
               </div>
@@ -392,38 +384,7 @@ export default function Product() {
           )}
         </div>
 
-        {/* Pager */}
-        <div style={{display:"flex", gap:8, justifyContent:"center", alignItems:"center", marginTop:16, flexWrap:"wrap"}}>
-          <button
-            className="add-btn"
-            disabled={page <= 1 || selectedFilter === "random"}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
-            ‹ Prev
-          </button>
-
-          <span style={{padding: '6px 10px'}}>
-            Page {page}{total ? ` / ${Math.max(1, Math.ceil(total / pageSize))}` : ""}
-          </span>
-
-          <button
-            className="add-btn"
-            disabled={(page * pageSize) >= total || selectedFilter === "random"}
-            onClick={() => setPage(p => p + 1)}
-          >
-            Next ›
-          </button>
-
-          <select
-            value={pageSize}
-            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-            style={{marginLeft: 8, padding: '6px'}}
-          >
-            <option value={12}>12</option>
-            <option value={24}>24</option>
-            <option value={48}>48</option>
-          </select>
-        </div>
+        {/* Pagination removed */}
       </main>
     </div>
   );

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import "./SellerProfile.css";
 
 const SellerProfile = () => {
   const { sellerId } = useParams();
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Replace the initial avatarSrc state
+const [avatarSrc, setAvatarSrc] = useState("/defaultProfile.png");
 
   useEffect(() => {
     if (!sellerId) return;
@@ -18,9 +22,11 @@ const SellerProfile = () => {
         return res.json();
       })
       .then((data) => {
-        // adjust if your backend wraps the user: { data: user }
         const sellerDoc = data.data ?? data;
         setSeller(sellerDoc);
+        // Set avatar once fetched
+         // Use seller avatar if exists, else defaultProfile.png
+         setAvatarSrc(sellerDoc.avatar || sellerDoc.profilePhoto || "/defaultProfile.png");
       })
       .catch((err) => {
         console.error("Error fetching seller:", err);
@@ -29,53 +35,58 @@ const SellerProfile = () => {
       .finally(() => setLoading(false));
   }, [sellerId]);
 
+  const handleImageError = () => {
+    // fallback to defaultProfile.png on error
+  if (avatarSrc !== "/defaultProfile.png") {
+    setAvatarSrc("/defaultProfile.png");
+  }
+  };
+
   return (
-    <div style={{ padding: 20, maxWidth: 900, margin: "0 auto" }}>
-      <Link to="/" style={{ display: "inline-block", marginBottom: 12 }}>
+    <div className="seller-profile-container">
+      <Link to="/" className="seller-profile-back">
         ← Back to home
       </Link>
 
       {loading ? (
-        <p>Loading seller profile...</p>
+        <p className="seller-profile-message">Loading seller profile...</p>
       ) : error ? (
-        <p style={{ color: "red" }}>Error: {error}</p>
+        <p className="seller-profile-error">Error: {error}</p>
       ) : !seller ? (
-        <p>Seller not found.</p>
+        <p className="seller-profile-message">Seller not found.</p>
       ) : (
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-          <div style={{ minWidth: 160 }}>
+        <div className="seller-profile-main">
+          <div className="seller-profile-avatar-wrapper">
             <img
-              src={seller.avatar ?? seller.profilePhoto ?? "/defaultAvatar.png"}
+              src={avatarSrc}
               alt={seller.name ?? seller.username ?? "Seller"}
-              style={{ width: 140, height: 140, borderRadius: "50%", objectFit: "cover" }}
-              onError={(e) => (e.target.src = "/defaultAvatar.png")}
+              className="seller-profile-avatar"
+              onError={handleImageError}
             />
           </div>
 
-          <div style={{ flex: 1 }}>
-            <h1 style={{ marginTop: 0 }}>{seller.name ?? seller.username ?? "Unnamed seller"}</h1>
+          <div className="seller-profile-info">
+            <h1>{seller.name ?? seller.username ?? "Unnamed seller"}</h1>
 
-            {(seller.aboutMe) && (
+            {seller.aboutMe && (
               <>
                 <h3>About</h3>
                 <p>{seller.aboutMe}</p>
               </>
             )}
 
-            <div style={{ marginTop: 12 }}>
+            <div className="seller-profile-contact">
               {seller.email && (
-                <p style={{ margin: "4px 0" }}>
+                <p>
                   <strong>Email:</strong> {seller.email}
                 </p>
               )}
               {seller.phone && (
-                <p style={{ margin: "4px 0" }}>
+                <p>
                   <strong>Phone:</strong> {seller.phone}
                 </p>
               )}
             </div>
-
-           
           </div>
         </div>
       )}
