@@ -8,6 +8,7 @@ import {
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
+import ChatDashboard from "../Component/ChatDashboard";
 
 const Profile = () => {
   const auth = getAuth();
@@ -23,7 +24,8 @@ const Profile = () => {
   const [productsLoading, setProductsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profileInfo"); // default tab
 
-  
+  //for chatboard
+  const [showChatDashboard, setShowChatDashboard] = useState(false);
 
   const DEFAULT_PROFILE_IMAGE = "/defaultProfile.png";
 
@@ -196,6 +198,11 @@ const Profile = () => {
       setMessage("Error updating profile");
     }
   };
+  //handle dashboard notification
+  const handleNotification=()=>
+    {
+      setShowChatDashboard(true);
+    }
 
    return (
     <div className="profile-wrapper">
@@ -266,6 +273,15 @@ const Profile = () => {
                     className={`sidebar-btn text-start ${activeTab === "wishlist" ? "active-tab" : ""}`}
                     onClick={() => setActiveTab("wishlist")}
                   >
+
+                  {/*chat Dashboard for seller*/}
+                  <button
+                    className="btn btn-custom btn-info w-100 mb-2"
+                    onClick={handleNotification}
+                  >
+                    Chat Dashboard
+                  </button>
+
                     My Wishlist
                   </button>
                   <button
@@ -344,6 +360,22 @@ const Profile = () => {
                   <button type="submit" className="btn w-100">Save Changes</button>
                 </form>
               )}
+
+              {showChatDashboard && (
+                  <div className="chat-dashboard-wrapper mt-4 card shadow-sm border-0 rounded-3 p-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="mb-0">Chat Dashboard</h5>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => setShowChatDashboard(false)}
+                    >
+                        ✖ Close
+                    </button>
+                  </div>
+                  <ChatDashboard currentUserId={mongoId} />
+                  </div>
+        )}
+
 
               {activeTab === "myProducts" && (
                 <div className="products-section">

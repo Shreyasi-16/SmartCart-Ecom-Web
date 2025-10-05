@@ -13,6 +13,7 @@ const ProductPage = () => {
   const [error, setError] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [chat, setChat] = useState(null);
+  const [chatId, setChatId] = useState(null);
 
   const navigate = useNavigate();
   const { productId } = useParams();
@@ -121,8 +122,11 @@ const ProductPage = () => {
   if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
   if (!product) return <p>Loading...</p>;
 
-  // Handle Chat button
-  const handleChat = async () => {
+  // Check if current user is the seller
+  const isSeller = product.seller === mongoId;
+
+  // Handle Chat button click
+  const handleChat = () => {
     if (!firebaseUser) {
       const confirmLogin = window.confirm(
         "You need to log in to chat with the seller. Do you want to go to the login page?"
@@ -133,37 +137,13 @@ const ProductPage = () => {
       return;
     }
 
-    // Ensure buyerId is available before attempting chat init
-    if (!mongoId) {
-      console.warn("Mongo buyer ID not yet available. Please wait.");
-      // Could display a temporary message here
-      return;
-    }
+    if (!mongoId) return;
 
-    try {
-      const res = await fetch("http://localhost:5000/api/chats/init", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          buyerId: mongoId,
-          sellerId: product.seller,
-          productId: product._id,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to start chat: ${res.status} - ${errorText}`);
-      }
-
-      const chatData = await res.json();
-      console.log("Chat started/fetched:", chatData);
-
-      setChat(chatData);
-      setShowChat(true);
-    } catch (err) {
-      console.error("Chat error:", err);
-    }
+    // Generate chatId and initialize chat
+    const newChatId = `${mongoId}_${product.seller}_${product._id}`;
+    setChatId(newChatId);
+    setChat({ _id: newChatId, messages: [] }); // empty chat initially
+    setShowChat(true); // open ChatBox
   };
 
   return (
@@ -205,6 +185,8 @@ const ProductPage = () => {
     <img src="/defaultBG.jpg" alt="default" className="main-photo" />
   )}
 </div>
+          {/* Chat button for buyers */}
+      
 
           {/* Product Info */}
           <div className="info-card">
@@ -252,9 +234,11 @@ const ProductPage = () => {
                 )}
               </section>
             </div>
-            <button onClick={handleChat} className="chat-button">
-              Chat
+            {!isSeller && (
+            <button className="chat-btn" onClick={handleChat} disabled={!mongoId}>
+              {!mongoId ? "Loading...USer not log in" : "Chat"}
             </button>
+            )}
           </div>
         </div>
 
@@ -263,17 +247,22 @@ const ProductPage = () => {
           <SmartPricingAdvisor product={product} />
         </div>
 
+        {/* Seller notice */}
+      {isSeller && (
+        <p className="text-danger mt-3">You are the seller. You cannot chat.</p>
+      )}
+
         {/* ChatBox */}
-        {showChat && chat && (
-          <ChatBox
-            chatId={chat._id}
-            product={product}
-            sellerId={product.seller}
-            buyerId={mongoId}
-            currentUserId={mongoId}
-            onClose={() => setShowChat(false)}
-          />
-        )}
+        {!isSeller && showChat && chat && chatId && (
+        <ChatBox
+          chatId={chatId}
+          product={product}
+          sellerId={product.seller}
+          buyerId={mongoId}
+          currentUserId={mongoId}
+          onClose={() => setShowChat(false)}
+        />
+      )}
       </div>
     </div>
   );

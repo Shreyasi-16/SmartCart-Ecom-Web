@@ -1,101 +1,49 @@
+// server/controllers/chatController.js
 const Chat = require("../models/Chat");
-const Message = require("../models/Message");
-const cloudinary = require("cloudinary").v2;
+const User = require("../models/User");
 
-// init chat
-const initChat = async (req, res) => {
-const { productId, buyerId, sellerId } = req.body;
+// Get all chats for a user (buyer or seller)
+exports.getChatsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params; // this is Firebase UID, coming from :userId in route
 
-if (!productId || !buyerId || !sellerId) {
-return res
-.status(400)
-.json({ message: "productId, buyerId, sellerId are required" });
-}
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
 
-try {
-let chat = await Chat.findOne({
-product: productId,
-buyer: buyerId,
-seller: sellerId,
-});
+    //  Find user by firebaseUid (stored as uid in your User model)
+    const user = await User.findOne({ uid: userId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
 
+    const mongoUserId = user._id;
 
-if (!chat) {
-  chat = await Chat.create({
-    product: productId,
-    buyer: buyerId,
-    seller: sellerId,
-  });
-}
+    // Fetch chats where this user is buyer or seller
+    const chats = await Chat.find({
+      $or: [{ buyerId: mongoUserId }, { sellerId: mongoUserId }],
+    })
+      .sort({ updatedAt: -1 })
+      .populate("productId", "title") // product title
+      .populate("buyerId", "uid")     // only return uid for buyer
+      .populate("sellerId", "uid");   // only return uid for seller
 
-res.json(chat);
+    // Format response for frontend
+    const formattedChats = chats.map((chat) => ({
+      chatId: chat._id,
+      product: chat.productId,
+      buyerId: chat.buyerId?._id,
+      buyerUid: chat.buyerId?.uid,
+      sellerId: chat.sellerId?._id,
+      sellerUid: chat.sellerId?.uid,
+      lastMessage: chat.messages?.[chat.messages.length - 1]?.text || "",
+      unreadCountBuyer: chat.unreadCountBuyer || 0,
+      unreadCountSeller: chat.unreadCountSeller || 0,
+    }));
 
-} catch (err) {
-console.error("Chat init server error:", err);
-res.status(500).json({ message: "Server error" });
-}
+    res.json(formattedChats);
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };
-
-// send message
-const sendMessage = async (req, res) => {
-const { chatId } = req.params;
-const { senderId, text } = req.body;
-
-if (!chatId || !senderId) {
-return res
-.status(400)
-.json({ message: "chatId and senderId are required" });
-}
-
-try {
-let fileUrl = null;
-let fileType = null;
-let fileName = null;
-
-if (req.files && req.files.file) {
-  const file = req.files.file;
-  const uploadOptions = file.mimetype.startsWith("image/")
-    ? {}
-    : { resource_type: "raw" };
-
-  const result = await cloudinary.uploader.upload(
-    file.tempFilePath,
-    uploadOptions
-  );
-
-  fileUrl = result.secure_url;
-  fileType = file.mimetype;
-  fileName = file.name;
-}
-
-const message = await Message.create({
-  chat: chatId,
-  sender: senderId,
-  text,
-  fileUrl,
-  fileType,
-  fileName,
-});
-
-res.json(message);
-
-
-} catch (err) {
-console.error("Message send server error:", err);
-res.status(500).json({ message: "Failed to send message" });
-}
-};
-
-// get all messages
-const getMessages = async (req, res) => {
-const { chatId } = req.params;
-try {
-const messages = await Message.find({ chat: chatId }).sort({ createdAt: 1 });
-res.json(messages);
-} catch (err) {
-console.error("Fetch messages server error:", err);
-res.status(500).json({ message: "Failed to fetch messages" });
-}
-};
-
-module.exports = { initChat, sendMessage, getMessages };

@@ -5,21 +5,35 @@ const mongoose = require("mongoose");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
 const fileUpload = require("express-fileupload");
+const http = require("http");
+const { Server } = require("socket.io");
+const axios = require('axios'); 
+
 
 const userRoutes = require("./routes/userRoutes");
 const { router: productRoutes, setCollection } = require("./routes/productRoutes");
 const sellRoutes = require("./routes/sellRoutes");
-const updateProfile = require("./routes/updateProfile");
-const chatRoutes = require("./routes/chatRoutes");  
-const pricingRoute = require('./routes/pricing'); //pricing
+const updateProfile = require("./routes/updateProfile");  
+const messageRoutes = require("./routes/messagesRoutes");
+const Message = require("./models/Message");//message model
+const chatRoutes = require("./routes/chatRoutes"); //chatRoutes for chatDashboard
+const pricingRoute = require('./routes/pricing'); 
+const visualSearchRouter = require("./routes/visualSearch");
 console.log("[index] pricingRoute typeof:", typeof pricingRoute);
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/api/visual-search", visualSearchRouter);
+const server = http.createServer(app); 
+const io = new Server(server, {
+  cors: {
+    origin: "*", // React frontend URL
+    methods: ["GET", "POST"],
+  },
+});
 
-// Use file upload ONCE
 app.use(fileUpload({ useTempFiles: true }));
 
 // Routes
@@ -31,6 +45,7 @@ app.use("/api/chats", chatRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use('/api/pricing', pricingRoute);  //pricing route
 console.log("[index] mounted /api/pricing");
+
 
 
 app.get("/", (req, res) => {
@@ -54,7 +69,7 @@ async function startServer() {
     console.log("✅ Mongoose connected (for Models)");
 
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () =>
+    server.listen(PORT, () =>
       console.log(`🚀 Server running at http://localhost:${PORT}`)
     );
   } catch (err) {

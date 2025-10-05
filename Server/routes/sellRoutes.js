@@ -1,7 +1,8 @@
 const express = require("express");
 const Product = require("../models/Product"); 
 const User = require("../models/User");
-const cloudinary = require("../config/cloudinaryConfig"); 
+const cloudinary = require("../config/cloudinaryConfig");
+const axios = require("axios");
 const router = express.Router();
 
 // POST /api/sell

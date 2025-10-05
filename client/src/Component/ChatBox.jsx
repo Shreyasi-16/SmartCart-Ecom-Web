@@ -1,133 +1,124 @@
-import { useState, useEffect, useRef } from "react";
-import "./ChatBox.css";
+import { useEffect, useState, useRef } from "react";
+import socketIOClient from "socket.io-client";
+import "./ChatBox.css"
 
-const ChatBox = ({ chatId, product, sellerId, buyerId, currentUserId, onClose, initialMessages = [] }) => {
-  const [messages, setMessages] = useState(initialMessages);
+const SOCKET_SERVER_URL = "http://localhost:5000"; // your backend socket URL
+
+const ChatBox = ({ chatId, product, sellerId, buyerId, currentUserId, onClose }) => {
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const socketRef = useRef();
   const messagesEndRef = useRef(null);
 
-  // Auto scroll to bottom when messages update
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+  // Scroll to bottom on new message
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // Fetch messages on load
+  //  Initialize Socket.IO connection
+  useEffect(() => {
+    socketRef.current = socketIOClient(SOCKET_SERVER_URL);
+
+    // Listen for incoming messages for this chatId
+    socketRef.current.on("receive_message", (msg) => {
+      if (msg.chatId === chatId) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+    
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, [chatId]);
+
+  // Fetch previous messages from backend
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/chats/${chatId}/messages`);
+        const res = await fetch(`${SOCKET_SERVER_URL}/api/messages/chat/${chatId}`);
         if (!res.ok) throw new Error("Failed to fetch messages");
         const data = await res.json();
-        setMessages(data);
+        setMessages(data); // array of messages
       } catch (err) {
-        console.error("Fetch messages error:", err);
+        console.error("Error fetching messages:", err);
       }
     };
-    fetchMessages();
+     fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    if (chatId) fetchMessages();
   }, [chatId]);
 
-  const handleSend = async () => {
-    if (!text.trim() && !file) return;
+  useEffect(() => scrollToBottom(), [messages]);
 
-    const formData = new FormData();
-    formData.append("senderId", currentUserId);
-    if (text) formData.append("text", text);
-    if (file) formData.append("file", file);
+  //  Handle sending message
+  const sendMessage = async () => {
+    if (!text.trim()) return;
+
+    const newMessage = {
+      chatId,
+      productId: product._id,
+      buyerId,
+      sellerId,
+      senderId: currentUserId,
+      receiverId: currentUserId === buyerId ? sellerId : buyerId,
+      message: text.trim(),
+    };
 
     try {
-      setLoading(true);
-      const res = await fetch(`http://localhost:5000/api/chats/${chatId}/message`, {
+      // Send to backend to save in MongoDB
+      const res = await fetch(`${SOCKET_SERVER_URL}/api/messages`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMessage),
       });
-
       if (!res.ok) throw new Error("Failed to send message");
+      const savedMsg = await res.json();
 
-      const newMsg = await res.json();
-      setMessages((prev) => [...prev, newMsg]);
+      // Emit via Socket.IO to the other user
+      socketRef.current.emit("send_message", savedMsg);
+
+      // Update local messages
+      setMessages((prev) => [...prev, savedMsg]);
       setText("");
-      setFile(null);
     } catch (err) {
-      console.error("Send message error:", err);
-      alert("Failed to send message. Try again.");
-    } finally {
-      setLoading(false);
+      console.error("Error sending message:", err);
     }
   };
 
+  // Handle Enter key
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") sendMessage();
+  };
+
   return (
-    <div className="chatbox-overlay">
-      <div className="chatbox">
-        {/* Header */}
-        <div className="chatbox-header">
-          <h3>Chat ({product?.title})</h3>
-          <button className="close-btn" onClick={onClose}>✖</button>
-        </div>
-
-        {/* Messages */}
-        <div className="chatbox-messages">
-          {messages.length === 0 && (
-            <p className="empty-chat">No messages yet. Start chatting!</p>
-          )}
-
-          {messages.map((msg, index) => {
-            const isMe = msg.sender === currentUserId;
-            const formattedTime = new Date(msg.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-
-            return (
-              <div
-                key={msg._id || index}
-                className={`message ${isMe ? "sent" : "received"}`}
-              >
-                {msg.text && <p>{msg.text}</p>}
-
-                {msg.fileUrl && (
-                  msg.fileType?.startsWith("image/") ? (
-                    <img src={msg.fileUrl} alt="upload" className="chat-img" />
-                  ) : (
-                    <a href={msg.fileUrl} download className="chat-file">
-                      📎 {msg.fileName || "File"}
-                    </a>
-                  )
-                )}
-
-                <span className="msg-time">{formattedTime}</span>
-              </div>
-            );
-          })}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="chatbox-input">
-          <input
-            type="text"
-            placeholder="Type your message..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <label className="file-label">
-          📎
-          <input
-            type="file"
-            accept="image/*,.pdf,.doc,.docx,.txt"
-            onChange={(e) => setFile(e.target.files[0])}
-            style={{ display: "none" }}
-          />
-          </label>
-          <button onClick={handleSend} disabled={loading}>
-            {loading ? "Sending..." : "Send"}
-          </button>
-        </div>
+    <div className="chatbox-container">
+      <div className="chatbox-header">
+        <h4>Chat about: {product.title}</h4>
+        <button onClick={onClose}>X</button>
       </div>
+
+      <div className="chatbox-messages">
+        {messages.map((msg, idx) => (
+          <div className={`chat-message ${msg.senderId === currentUserId ? "sent" : "received"}`}>
+          <p>{msg.message}</p>
+          <span className="time">{new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="chatbox-input">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyPress}
+        />
+        <button onClick={sendMessage}>Send</button>
+      </div>
+
     </div>
   );
 };
