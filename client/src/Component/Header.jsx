@@ -136,32 +136,31 @@ const handleImageUpload = async (e) => {
     console.log("🔎 Visual search raw:", data);
 
     // 3) normalize visual-search results
-    const normalized = (Array.isArray(data) ? data : []).map((r, idx) => {
-      const id = r._id || r.productId || r.id || `vs-${idx}`;
+    const normalized = (Array.isArray(data.products) ? data.products : []).map((r, idx) => {
+  const id = r._id || r.productId || r.id || `vs-${idx}`;
 
-      // pick photos from multiple possible keys
-      let photos = [];
-      if (r.photos) photos = Array.isArray(r.photos) ? r.photos : [r.photos];
-      else if (r.photo) photos = [r.photo];
-      else if (r.image) photos = [r.image];
+  let photos = [];
+  if (r.photos) photos = Array.isArray(r.photos) ? r.photos : [r.photos];
+  else if (r.photo) photos = [r.photo];
+  else if (r.image) photos = [r.image];
 
-      // normalize all photos to string URLs
-      const photosNormalized = photos
-        .map((p) => {
-          if (!p) return null;
-          if (typeof p === "string") return p;        // already a string URL
-          if (p.url) return p.url;                   // object with url
-          return null;
-        })
-        .filter(Boolean);
+  const photosNormalized = photos
+    .map((p) => {
+      if (!p) return null;
+      if (typeof p === "string") return p;
+      if (p.url) return p.url;
+      return null;
+    })
+    .filter(Boolean);
 
-      return {
-        _id: id,
-        title: r.title || r.name || "Untitled",
-        photos: photosNormalized,
-        raw: r,
-      };
-    });
+  return {
+    _id: id,
+    title: r.title || r.name || "Untitled",
+    photos: photosNormalized,
+    raw: r,
+  };
+});
+
 
     // 4) dedupe by _id to fix React key warning
     const dedupedNormalized = Array.from(

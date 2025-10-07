@@ -1,41 +1,31 @@
+const { exec } = require("child_process"); // ✅ for running Python script
+const util = require("util");
+const path = require("path");
+const execAsync = util.promisify(exec);
 
 const express = require("express");
 const cors = require("cors");
+
 const mongoose = require("mongoose");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
 const fileUpload = require("express-fileupload");
-const http = require("http");
-const { Server } = require("socket.io");
-const axios = require('axios'); 
-
 
 const userRoutes = require("./routes/userRoutes");
 const { router: productRoutes, setCollection } = require("./routes/productRoutes");
 const sellRoutes = require("./routes/sellRoutes");
-const updateProfile = require("./routes/updateProfile");  
-const messageRoutes = require("./routes/messagesRoutes");
-const Message = require("./models/Message");//message model
-const chatRoutes = require("./routes/chatRoutes"); //chatRoutes for chatDashboard
-const pricingRoute = require('./routes/pricing'); 
+const updateProfile = require("./routes/updateProfile");
+const chatRoutes = require("./routes/chatRoutes");  
 const visualSearchRouter = require("./routes/visualSearch");
-console.log("[index] pricingRoute typeof:", typeof pricingRoute);
+
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/visual-search", visualSearchRouter);
-const server = http.createServer(app); 
-const io = new Server(server, {
-  cors: {
-    origin: "*", // React frontend URL
-    methods: ["GET", "POST"],
-  },
-});
-
 app.use(fileUpload({ useTempFiles: true }));
-
+app.use("/api/visual-search", visualSearchRouter);
 // Routes
 app.use(userRoutes);
 app.use("/products", productRoutes);
@@ -43,8 +33,6 @@ app.use("/api/sell", sellRoutes);
 app.use("/api/users", updateProfile);
 app.use("/api/chats", chatRoutes);
 app.use("/uploads", express.static("uploads"));
-app.use('/api/pricing', pricingRoute);  //pricing route
-console.log("[index] mounted /api/pricing");
 
 
 
@@ -60,16 +48,29 @@ async function startServer() {
     const client = new MongoClient(mongoUri);
     await client.connect();
     console.log("✅ MongoClient connected (for Atlas Search)");
-
+ 
     const db = client.db("SmartCart");
-    setCollection(db.collection("products")); // ✅ pass collection to routes
+    setCollection(db.collection("products")); 
 
     // Connect Mongoose (for models if needed)
     await mongoose.connect(mongoUri);
     console.log("✅ Mongoose connected (for Models)");
+   // 🔹 Run ANN build script automatically
+const annBuildPath = path.join(__dirname, "scripts", "build_ann.py"); // ⬅️ correct path
+console.log("⚡ Building ANN index...");
+exec(`python "${annBuildPath}"`, (error, stdout, stderr) => {
+  if (error) {
+    console.error(`❌ Error running ann_build: ${error.message}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`❌ ann_build stderr: ${stderr}`);
+  }
+  console.log(`✅ ANN index built successfully:\n${stdout}`);
+});
 
     const PORT = process.env.PORT || 5000;
-    server.listen(PORT, () =>
+    app.listen(PORT, () =>
       console.log(`🚀 Server running at http://localhost:${PORT}`)
     );
   } catch (err) {

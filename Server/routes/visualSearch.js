@@ -1,87 +1,92 @@
+// routes/visualSearch.js
 const express = require("express");
 const axios = require("axios");
-const Product = require("../models/Product");
 const router = express.Router();
-// Cosine similarity helper
-function cosineSimilarity(vecA, vecB) {
-  if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
-  const dot = vecA.reduce((sum, val, i) => sum + val * vecB[i], 0);
-  const normA = Math.sqrt(vecA.reduce((sum, val) => sum + val * val, 0));
-  const normB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (normA * normB);
-}
+const { spawn } = require("child_process");
+const Product = require("../models/Product"); // adjust path
 
-// In-memory cache
-let cachedEmbeddings = [];
-
-// Load embeddings from DB on server start
-async function loadEmbeddings() {
+// Helper: get embedding from Python CLIP server
+async function getEmbedding(imageUrl) {
   try {
-    const products = await Product.find({ "photos.embedding.0": { $exists: true } }).lean();
-    cachedEmbeddings = [];
-
-    for (const product of products) {
-      if (!product.photos || !Array.isArray(product.photos)) continue;
-      for (const photo of product.photos) {
-        if (!photo.embedding || !Array.isArray(photo.embedding)) continue;
-        cachedEmbeddings.push({
-          productId: product._id,
-          title: product.title,
-          photo: photo.url,
-          embedding: photo.embedding
-        });
-      }
-    }
-
-    console.log(`✅ Loaded ${cachedEmbeddings.length} embeddings into cache.`);
+    const res = await axios.post("http://127.0.0.1:8000/embed", { url: imageUrl });
+    return res.data.embedding;
   } catch (err) {
-    console.error("❌ Failed to load embeddings:", err);
+    throw new Error("Failed to get embedding: " + err.message);
   }
 }
 
-// Initial load
-loadEmbeddings();
+// Helper: query ANN Python script
+function queryANN(embedding) {
+  return new Promise((resolve, reject) => {
+    const py = spawn("python", ["scripts/query_ann.py"]);
 
-// Optional: refresh cache every X minutes (e.g., 10 minutes)
-setInterval(loadEmbeddings, 10 * 60 * 1000);
+    let stdoutData = "";
+    let stderrData = "";
 
-// POST /api/visual-search
+    py.stdout.on("data", (data) => {
+      stdoutData += data.toString();
+    });
+
+    py.stderr.on("data", (data) => {
+      stderrData += data.toString();
+      console.error("[ANN stderr]", data.toString().trim());
+    });
+
+    py.on("close", (code) => {
+      if (stderrData.includes("not found") || stderrData.includes("ANN search failed")) {
+        return reject(new Error(stderrData));
+      }
+      try {
+        const results = JSON.parse(stdoutData);
+        resolve(results);
+      } catch (err) {
+        reject(new Error("Failed to parse ANN output: " + err.message + "\nPython stdout: " + stdoutData));
+      }
+    });
+
+    // Send embedding to Python
+    py.stdin.write(JSON.stringify(embedding));
+    py.stdin.end();
+  });
+}
+
+// POST /visual-search
 router.post("/", async (req, res) => {
   const { imageUrl } = req.body;
-  if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+
+  console.log("\n-----------------------------------------");
+  console.log("🖼️ Incoming Visual Search Request");
+  console.log("📸 Image URL:", imageUrl);
+
+  if (!imageUrl) {
+    return res.status(400).json({ error: "Image URL is required." });
+  }
 
   try {
-    // 1️⃣ Get embedding for uploaded image
-    let queryEmbedding;
-    try {
-      const embedResp = await axios.post("http://127.0.0.1:8000/embed", { url: imageUrl });
-      queryEmbedding = embedResp.data.embedding;
-      if (!queryEmbedding || !Array.isArray(queryEmbedding)) {
-        console.error("Invalid embedding returned:", embedResp.data);
-        return res.status(500).json({ error: "Visual search failed: invalid embedding" });
-      }
-    } catch (err) {
-      console.error("Embedding request failed:", err.response?.data || err.message);
-      return res.status(500).json({ error: "Visual search failed: embedding server error" });
+    console.log("🧠 Requesting embedding from Python server...");
+    const embedding = await getEmbedding(imageUrl);
+    console.log("✅ Received query embedding:", embedding.length, "dimensions");
+
+    console.log("🔍 Searching ANN index...");
+    const results = await queryANN(embedding);
+    console.log(`✅ ANN search completed: ${results.length} results`);
+
+    if (!results.length) {
+      return res.status(200).json({ message: "No matches found" });
     }
 
-    // 2️⃣ Compare with cached embeddings
-    const results = cachedEmbeddings
-      .map(p => ({
-        productId: p.productId,
-        title: p.title,
-        photo: p.photo,
-        similarity: cosineSimilarity(queryEmbedding, p.embedding)
-      }))
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 10); // top 10
+    // Optional: fetch product details from MongoDB
+    const productIds = results.map((r) => r.productId);
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
 
-    res.json(results);
-
+    res.json({
+      query: imageUrl,
+      topResults: results,
+      products,
+    });
   } catch (err) {
-    console.error("❌ Visual search error:", err);
-    res.status(500).json({ error: "Visual search failed", details: err.message });
+    console.error("❌ Visual search error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
