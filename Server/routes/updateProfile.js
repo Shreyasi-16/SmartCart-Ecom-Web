@@ -75,7 +75,9 @@ router.post("/updateProfile", async (req, res) => {
       locationMode,
       manualLocation,
       gpsLocation,
+      upiId,
     } = req.body;
+
 
     if (!uid) {
       return res.status(400).json({ message: "UID is required" });
@@ -87,6 +89,7 @@ router.post("/updateProfile", async (req, res) => {
       aboutMe,
       photoURL,
       locationMode,
+      upiId
     };
 
     let unsetFields = {};
@@ -111,6 +114,11 @@ router.post("/updateProfile", async (req, res) => {
 
       unsetFields.manualLocation = "";
     }
+    // ✅ Optional: Validate UPI ID format if provided
+if (upiId && !/^[\w.\-]{2,256}@[\w]{2,64}$/.test(upiId)) {
+  return res.status(400).json({ message: "Invalid UPI ID format" });
+}
+
 
     const updatedUser = await User.findOneAndUpdate(
       { uid },

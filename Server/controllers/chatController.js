@@ -5,13 +5,13 @@ const User = require("../models/User");
 // Get all chats for a user (buyer or seller)
 exports.getChatsByUser = async (req, res) => {
   try {
-    const { userId } = req.params; // this is Firebase UID, coming from :userId in route
+    const { userId } = req.params; // Firebase UID
 
     if (!userId) {
       return res.status(400).json({ error: "User ID is required" });
     }
 
-    //  Find user by firebaseUid (stored as uid in your User model)
+    // Find MongoDB user by Firebase UID
     const user = await User.findOne({ uid: userId });
     if (!user) {
       return res.status(404).json({ error: "User not found in database" });
@@ -25,8 +25,8 @@ exports.getChatsByUser = async (req, res) => {
     })
       .sort({ updatedAt: -1 })
       .populate("productId", "title") // product title
-      .populate("buyerId", "uid")     // only return uid for buyer
-      .populate("sellerId", "uid");   // only return uid for seller
+      .populate("buyerId", "uid")
+      .populate("sellerId", "uid");
 
     // Format response for frontend
     const formattedChats = chats.map((chat) => ({
@@ -36,7 +36,7 @@ exports.getChatsByUser = async (req, res) => {
       buyerUid: chat.buyerId?.uid,
       sellerId: chat.sellerId?._id,
       sellerUid: chat.sellerId?.uid,
-      lastMessage: chat.messages?.[chat.messages.length - 1]?.text || "",
+      lastMessage: chat.lastMessage || "", // ✅ fixed
       unreadCountBuyer: chat.unreadCountBuyer || 0,
       unreadCountSeller: chat.unreadCountSeller || 0,
     }));

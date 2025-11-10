@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const messageSchema = new mongoose.Schema(
   {
     chatId: { type: String, required: true }, // unique chatid= buyerId_sellerId_productId
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     buyerId: { type: String, required: true },  
     sellerId: { type: String, required: true },  
     senderId: { type: String, required: true }, 

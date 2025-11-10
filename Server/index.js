@@ -1,4 +1,4 @@
-const { exec } = require("child_process"); // ✅ for running Python script
+const { exec ,span} = require("child_process"); // ✅ for running Python script
 const util = require("util");
 const path = require("path");
 const execAsync = util.promisify(exec);
@@ -16,6 +16,7 @@ const { router: productRoutes, setCollection } = require("./routes/productRoutes
 const sellRoutes = require("./routes/sellRoutes");
 const updateProfile = require("./routes/updateProfile");
 const chatRoutes = require("./routes/chatRoutes");  
+const messageRoutes = require("./routes/messagesRoutes");
 const visualSearchRouter = require("./routes/visualSearch");
 const pricingRoute = require('./routes/pricing'); //pricing
 console.log("[index] pricingRoute typeof:", typeof pricingRoute);
@@ -32,12 +33,26 @@ app.use(userRoutes);
 app.use("/products", productRoutes);
 app.use("/api/sell", sellRoutes);
 app.use("/api/users", updateProfile);
+app.use("/api/messages", messageRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use('/api/pricing', pricingRoute);  //pricing route
 console.log("[index] mounted /api/pricing");
+const paymentRoutes = require("./routes/payment");
+app.use("/api/payment", paymentRoutes);
 
 
+const modelsRouter = require("./routes/models");
+app.use("/api", modelsRouter);
+
+app.use("/models", express.static(path.join(__dirname, "public", "models")));
+
+// webodm route
+
+const webodmRouter = require("./routes/webodm");
+app.use("/api/webodm", webodmRouter);
+
+app.use("/api/updates", require("./routes/updates"));
 
 app.get("/", (req, res) => {
   res.send("🚀 Backend is running!");

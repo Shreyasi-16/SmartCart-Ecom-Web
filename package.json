@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/SaemaPatel05/SmartCart#readme",
   "dependencies": {
+    "@google/model-viewer": "^4.1.0",
     "axios": "^1.12.2"
   }
 }

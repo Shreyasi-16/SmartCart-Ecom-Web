@@ -41,10 +41,10 @@ export function Footer() {
         <div className="footer-column">
           <h3>Our Socials</h3>
           <div className="social-icons">
-            <a href="#"><img src="/public/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="/public/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="/public/instagram2.png" alt="Instagram" /></a>
-            <a href="#"><img src="/public/linkedin.png" alt="LinkedIn" /></a>
+            <a href="#"><img src="/facebook.png" alt="Facebook" /></a>
+            <a href="#"><img src="/twitter.png" alt="Twitter" /></a>
+            <a href="#"><img src="/instagram2.png" alt="Instagram" /></a>
+            <a href="#"><img src="/linkedin.png" alt="LinkedIn" /></a>
           </div>
         </div>
       </div>

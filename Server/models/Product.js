@@ -37,6 +37,10 @@ const productSchema = new mongoose.Schema({
     // Which mode is active
     locationMode: { type: String, enum: ["manual", "gps"], default: "manual" },
   
+     modelFileId: String,   // GridFS id as string
+  modelStatus: { type: String, default: "none" }, // none | processing | ready | failed
+  webodmTaskId: String,
+  lastProgress: { type: Number, default: 0 }
 
 
 });

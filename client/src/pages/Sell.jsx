@@ -32,6 +32,14 @@ export default function Sell() {
   const [userId, setUserId] = useState(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [fetchedGPS, setFetchedGPS] = useState({ lat: 0, lng: 0 });
+
+
+  // Add these states (store original File objects for WebODM uploads, and 3D preferences)
+const [photosFiles, setPhotosFiles] = useState(Array(20).fill(null)); // store original File objects
+const [wants3D, setWants3D] = useState(false);       // whether user wants a 3D model
+const [confirmed3DInstr, setConfirmed3DInstr] = useState(false); // user confirmed reading instructions
+const [webodmStatus, setWebodmStatus] = useState(null); // show upload / processing status
+
   const auth = getAuth();
   
   useEffect(() => {
@@ -41,6 +49,7 @@ export default function Sell() {
       } else {
         setUserId(null);
       }
+
     });
     return () => unsubscribe();
   }, [auth]);
@@ -552,45 +561,59 @@ export default function Sell() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   // ------------------- // Handle Photo Upload // -------------------
-  const handlePhotoChange = async (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
+ const handlePhotoChange = async (e, index) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const newUploading = [...uploading];
-    newUploading[index] = true;
-    setUploading(newUploading);
+  // Save original file so we can send to WebODM later if requested
+  setPhotosFiles(prev => {
+    const copy = [...prev];
+    copy[index] = file;
+    return copy;
+  });
 
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    data.append("cloud_name", CLOUDINARY_CLOUD_NAME);
+  const newUploading = [...uploading];
+  newUploading[index] = true;
+  setUploading(newUploading);
 
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: data,
-        }
-      );
-      const result = await res.json();
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  data.append("cloud_name", CLOUDINARY_CLOUD_NAME);
 
-      if (result.secure_url) {
-        const newPhotos = [...photos];
-        newPhotos[index] = result.secure_url;
-        setPhotos(newPhotos);
-      } else {
-        throw new Error("Image upload failed, no secure_url received.");
+  try {
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: data,
       }
-    } catch (err) {
-      console.error("Cloudinary upload error:", err);
-      alert("Error uploading image.");
-    } finally {
-      const finalUploading = [...uploading];
-      finalUploading[index] = false;
-      setUploading(finalUploading);
+    );
+    const result = await res.json();
+
+    if (result.secure_url) {
+      const newPhotos = [...photos];
+      newPhotos[index] = result.secure_url;
+      setPhotos(newPhotos);
+    } else {
+      throw new Error("Image upload failed, no secure_url received.");
     }
-  };
+  } catch (err) {
+    console.error("Cloudinary upload error:", err);
+    alert("Error uploading image.");
+    // roll back original file if you want:
+    setPhotosFiles(prev => {
+      const copy = [...prev];
+      copy[index] = null;
+      return copy;
+    });
+  } finally {
+    const finalUploading = [...uploading];
+    finalUploading[index] = false;
+    setUploading(finalUploading);
+  }
+};
+
 
   // ------------------- // Render Photo Grid // -------------------
   const renderPhotoGrid = () => (
@@ -807,27 +830,354 @@ export default function Sell() {
           ? formData.gpsLocation
           : { type: "Point", coordinates: [0, 0] },
     };
+    // If user requested 3D model, and they confirmed instructions, upload original files to WebODM via your backend
+// let webodmModels = null;
+// if (wants3D) {
+//   if (!confirmed3DInstr) {
+//     alert("Please confirm you followed the 3D photo instructions before proceeding.");
+//     return;
+//   }
 
-    console.log("Submitting productData:", productData);
-    try {
-      const res = await fetch("http://localhost:5000/api/sell", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
+//   // gather files from photosFiles
+//   const filesToSend = photosFiles.filter(f => f !== null);
+//   if (filesToSend.length < 5) { // arbitrary minimum
+//     if (!confirm("You have fewer than 5 original photos — results may be poor. Continue?")) {
+//       return;
+//     }
+//   }
 
-      const data = await res.json();
-      if (res.ok) {
-        alert("Ad posted successfully!");
-        console.log("Inserted Product:", data);
-      } else {
-        alert("Error: " + data.error);
-      }
-    } catch (err) {
-      console.error("Error posting ad:", err);
-      alert("Something went wrong!");
+//   // try {
+//   //   setWebodmStatus("Uploading photos to server...");
+//   //   const fd = new FormData();
+//   //   filesToSend.forEach((file, i) => fd.append("images", file, file.name));
+//   //   fd.append("name", `SmartCart-ad-${Date.now()}`);
+
+//   //   // POST to your Node endpoint that wraps WebODM (route from earlier example)
+//   //   const resp = await fetch("http://localhost:5000/api/webodm/task", {
+//   //     method: "POST",
+//   //     body: fd,
+//   //   });
+
+//   //   const json = await resp.json();
+//   //   if (!resp.ok) throw new Error(json.error || "WebODM upload failed");
+
+//   //   // Expecting { models: [{ name, path }], taskId, ... } per earlier server code
+//   //   webodmModels = json.models || null;
+//   //   setWebodmStatus(json.message || "Uploaded and processing");
+//   // } catch (err) {
+//   //   console.error("WebODM upload error:", err);
+//   //   alert("Failed to upload photos for 3D model: " + (err.message || err));
+//   //   setWebodmStatus(null);
+//   //   // optionally let user continue posting ad without 3D:
+//   //   if (!confirm("Proceed to post the ad without 3D model?")) return;
+//   // }
+// }
+// // Attach any model links to productData for server to store or show
+// if (webodmModels && webodmModels.length > 0) {
+//   productData.modelUrls = webodmModels.map(m => `http://localhost:5000${m.path}`);
+// }
+
+//     console.log("Submitting productData:", productData);
+//     try {
+//       const res = await fetch("http://localhost:5000/api/sell", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(productData),
+//       });
+
+//       const data = await res.json();
+//       // after `const data = await res.json();`
+// let created = null;
+// if (res.ok) {
+//   created = data.product || data; // adapt if your API returns data differently
+//   alert("Ad posted successfully!");
+//   console.log("Inserted Product:", created);
+// } else {
+//   alert("Error: " + (data.error || JSON.stringify(data)));
+//   return; // stop here if product creation failed
+// }
+
+// // If user wanted 3D, upload originals to WebODM AFTER product exists
+// if (wants3D && created) {
+//   // sanity checks
+//   if (!filesToSend || filesToSend.length === 0) {
+//     console.warn("No original files available to upload to WebODM.");
+//   } else {
+//     try {
+//       setWebodmStatus("Uploading original photos to WebODM...");
+//       const fd2 = new FormData();
+//       filesToSend.forEach((file) => fd2.append("images", file, file.name));
+
+//       // attach productId so server can link model -> product
+//       fd2.append("productId", created._id || String(created._id));
+
+//       // optional task name
+//       fd2.append("name", `SmartCart-ad-${created._id || Date.now()}`);
+
+//       const wresp = await fetch("http://localhost:5000/api/webodm/task", {
+//         method: "POST",
+//         body: fd2,
+//       });
+
+//       let wjson = null;
+//       try { wjson = await wresp.json(); } catch (e) { wjson = null; }
+
+//       if (!wresp.ok) {
+//         console.warn("WebODM upload returned non-ok:", wjson || wresp.statusText);
+//         setWebodmStatus(null);
+//         if (!confirm("WebODM upload failed. Continue without 3D model?")) return;
+//       } else {
+//         setWebodmStatus("WebODM uploaded — saving model reference to product...");
+
+//         console.log("[webodm] response:", wjson);
+
+//         // Build payload depending on response shape.
+//         // If your server returns models: [{ path: "/download/..." }] and/or fileId, adapt accordingly.
+//         const modelUrls = (wjson?.models || []).map(m => {
+//           // m.path might already be absolute; only prefix if relative
+//           if (!m.path) return null;
+//           return m.path.startsWith("http") ? m.path : `http://localhost:5000${m.path}`;
+//         }).filter(Boolean);
+
+//         const attachBody = {
+//           modelUrls: modelUrls.length ? modelUrls : undefined,
+//           modelFileId: wjson?.fileId || undefined,
+//           webodmTaskId: wjson?.taskId || wjson?.task_id || undefined,
+//           modelStatus: wjson?.fileId ? "ready" : "processing"
+//         };
+
+//         // remove undefined fields
+//         Object.keys(attachBody).forEach(k => attachBody[k] === undefined && delete attachBody[k]);
+
+//         // Make sure this route exists on your server and path is correct.
+//         // Change the URL if your server mounts product routes at /api/products instead.
+//         const attachUrl = `http://localhost:5000/products/${created._id}/attach-model`;
+
+//         const attachRes = await fetch(attachUrl, {
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" },
+//           body: JSON.stringify(attachBody),
+//         });
+
+//         if (!attachRes.ok) {
+//           console.warn("Failed to attach model to product:", await attachRes.text());
+//         } else {
+//           console.log("Model attached to product.");
+//         }
+
+//         setWebodmStatus("Model attached to product");
+      
+//        }  // <-- closes the inner `if (!wresp.ok) else {`
+//     } catch (err) {     // <-- add this catch to close the try
+//       console.error("WebODM post-create upload error:", err);
+//       setWebodmStatus(null);
+//       if (!confirm("Failed to upload to WebODM. Continue posting without 3D model?")) return;
+//     }
+//   } // <-- closes the "else" (has filesToSend)
+// } // <-
+  // collect filesToSend in outer scope so we can use it both before and after product creation
+let webodmModels = null;
+let filesToSend = Array.isArray(photosFiles) ? photosFiles.filter(f => f !== null) : [];
+
+if (wants3D) {
+  if (!confirmed3DInstr) {
+    alert("Please confirm you followed the 3D photo instructions before proceeding.");
+    return;
+  }
+
+  if (filesToSend.length < 5) { // arbitrary minimum
+    if (!confirm("You have fewer than 5 original photos — results may be poor. Continue?")) {
+      return;
     }
-  };
+  }
+
+  // (optional) you can do an early / synchronous upload here if you prefer, but
+  // in the flow below we upload AFTER product creation so that the productId exists.
+  // webodmModels = ... (you already commented out the early upload)
+}
+
+// Attach any model links to productData for server to store or show
+if (webodmModels && webodmModels.length > 0) {
+  productData.modelUrls = webodmModels.map(m => `http://localhost:5000${m.path}`);
+}
+
+console.log("Submitting productData:", productData);
+
+try {
+  const res = await fetch("http://localhost:5000/api/sell", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(productData),
+  });
+
+  const data = await res.json();
+  // after `const data = await res.json();`
+  let created = null;
+  if (res.ok) {
+    created = data.product || data; // adapt if your API returns data differently
+    alert("Ad posted successfully!");
+    console.log("Inserted Product:", created);
+  } else {
+    alert("Error: " + (data.error || JSON.stringify(data)));
+    return; // stop here if product creation failed
+  }
+
+  // If user wanted 3D, upload originals to WebODM AFTER product exists
+  if (wants3D && created) {
+    if (!filesToSend || filesToSend.length === 0) {
+      console.warn("No original files available to upload to WebODM.");
+    } else {
+      try {
+        setWebodmStatus("Uploading original photos to WebODM...");
+        const fd2 = new FormData();
+        filesToSend.forEach((file) => fd2.append("images", file, file.name));
+
+        // attach productId so server can link model -> product
+        fd2.append("productId", created._id || String(created._id));
+
+        // optional task name
+        fd2.append("name", `SmartCart-ad-${created._id || Date.now()}`);
+
+        const wresp = await fetch("http://localhost:5000/api/webodm/task", {
+          method: "POST",
+          body: fd2,
+        });
+
+        let wjson = null;
+        try { wjson = await wresp.json(); } catch (e) { wjson = null; }
+
+        if (!wresp.ok) {
+          console.warn("WebODM upload returned non-ok:", wjson || wresp.statusText);
+          setWebodmStatus(null);
+          if (!confirm("WebODM upload failed. Continue without 3D model?")) return;
+        } else {
+          setWebodmStatus("WebODM uploaded — saving model reference to product...");
+
+          console.log("[webodm] response:", wjson);
+
+          // Build payload depending on response shape.
+          const modelUrls = (wjson?.models || []).map(m => {
+            if (!m?.path) return null;
+            return m.path.startsWith("http") ? m.path : `http://localhost:5000${m.path}`;
+          }).filter(Boolean);
+
+          const attachBody = {
+            modelUrls: modelUrls.length ? modelUrls : undefined,
+            modelFileId: wjson?.fileId || undefined,
+            webodmTaskId: wjson?.taskId || wjson?.task_id || undefined,
+            modelStatus: wjson?.fileId ? "ready" : "processing"
+          };
+
+          // remove undefined fields
+          Object.keys(attachBody).forEach(k => attachBody[k] === undefined && delete attachBody[k]);
+
+          const attachUrl = `http://localhost:5000/products/${created._id}/attach-model`;
+
+          const attachRes = await fetch(attachUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(attachBody),
+          });
+
+          if (!attachRes.ok) {
+            console.warn("Failed to attach model to product:", await attachRes.text());
+          } else {
+            console.log("Model attached to product.");
+          }
+
+          setWebodmStatus("Model attached to product");
+        }
+      } catch (err) {
+        // Catches errors that happen during wresp upload/attach steps
+        console.error("WebODM post-create upload error:", err);
+        setWebodmStatus(null);
+        if (!confirm("Failed to upload to WebODM. Continue posting without 3D model?")) return;
+      }
+    }
+  }
+
+} catch (err) {
+  // Catches errors from the product creation request itself
+  console.error("Error posting ad:", err);
+  alert("Something went wrong!");
+  setWebodmStatus(null);
+}
+};
+
+    
+
+  //     if (res.ok) {
+  //       alert("Ad posted successfully!");
+  //       console.log("Inserted Product:", data);
+  //           // --- AFTER product created: optionally upload original photos to WebODM and attach model to product ---
+  //   let created = null;
+  //   if (res.ok) {
+  //     // `data` is your server response; adapt if your API returns data.product
+  //     created = data.product || data;
+  //   }
+
+  //   if (wants3D && created) {
+  //     try {
+  //       setWebodmStatus("Uploading original photos to WebODM...");
+  //       const fd2 = new FormData();
+  //       // attach files (originals) — same filesToSend array you built earlier
+  //       filesToSend.forEach((file) => fd2.append("images", file, file.name));
+  //       // attach the product id so server can link model -> product
+  //       fd2.append("productId", created._id || created._id?.toString());
+
+  //       // option: give the task a name
+  //       fd2.append("name", `SmartCart-ad-${created._id || Date.now()}`);
+
+  //       const wresp = await fetch("http://localhost:5000/api/webodm/task", {
+  //         method: "POST",
+  //         body: fd2,
+  //       });
+
+  //       const wjson = await wresp.json();
+  //       if (!wresp.ok) {
+  //         console.warn("WebODM upload returned non-ok:", wjson);
+  //         // allow ad to remain posted, but notify user
+  //         setWebodmStatus(null);
+  //         if (!confirm("WebODM upload failed. Continue without 3D model?")) return;
+  //       } else {
+  //         setWebodmStatus("WebODM uploaded — saving model reference to product...");
+
+  //         // If your /api/webodm/task returns { fileId, models, taskId, ... } adapt accordingly.
+  //         // Example: assume wjson.fileId or wjson.models[] with path information.
+  //         // We'll call a product-update endpoint to attach the model metadata to the product.
+
+  //         // Build payload to attach to product (adjust to what your backend expects)
+  //         const attachBody = {
+  //           modelUrls: (wjson.models || []).map(m => `http://localhost:5000${m.path}`),
+  //           modelFileId: wjson.fileId || null,
+  //           webodmTaskId: wjson.taskId || null,
+  //           modelStatus: wjson.fileId ? "ready" : "processing"
+  //         };
+
+  //         // Call your product-update endpoint (create one if doesn't exist)
+  //         await fetch(`http://localhost:5000/products/${created._id}/attach-model`, {
+  //           method: "POST",
+  //           headers: { "Content-Type": "application/json" },
+  //           body: JSON.stringify(attachBody),
+  //         });
+
+  //         setWebodmStatus("Model attached to product");
+  //       }
+  //     } catch (err) {
+  //       console.error("WebODM post-create upload error:", err);
+  //       setWebodmStatus(null);
+  //       if (!confirm("Failed to upload to WebODM. Continue posting without 3D model?")) return;
+  //     }
+  //   }
+
+  //     } else {
+  //       alert("Error: " + data.error);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error posting ad:", err);
+  //     alert("Something went wrong!");
+  //   }
+  // };
 
   // ------------------- // Common Fields // -------------------
   const renderCommonFields = () => (
@@ -857,8 +1207,65 @@ export default function Sell() {
         onChange={handleChange}
         required
       />
+      
     </>
   );
+  // Add this component in Sell.jsx (below renderPhotoGrid or near other render helpers)
+function Photo3DOptions() {
+  return (
+    <div className="photo-3d-options" style={{ marginBottom: 12 }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          type="checkbox"
+          checked={wants3D}
+          onChange={(e) => {
+            setWants3D(e.target.checked);
+            if (!e.target.checked) {
+              setConfirmed3DInstr(false);
+              setWebodmStatus(null);
+            }
+          }}
+        />
+        <strong>Generate 3D model from uploaded photos</strong>
+      </label>
+
+      {wants3D && (
+        <div className="photo-3d-instructions" style={{
+          border: "1px solid #ddd", padding: 12, marginTop: 8, borderRadius: 6, background: "#fafafa"
+        }}>
+          <p><strong>Quick instructions for good photogrammetry results</strong></p>
+          <ul style={{ margin: "8px 0 12px 18px" }}>
+            <li>Take many overlapping photos of the object from all sides (aim for 30–100 images for small objects; 50+ for good results).</li>
+            <li>Keep the object centered; maintain consistent exposure and focus.</li>
+            <li>Move the camera slowly in a circle, capturing multiple heights (top/side/45° angles).</li>
+            <li>Avoid motion blur, reflections, and repetitive textures.</li>
+            <li>Prefer plain backgrounds for small objects; for large scenes capture ground control points if needed.</li>
+          </ul>
+
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={confirmed3DInstr}
+              onChange={(e) => setConfirmed3DInstr(e.target.checked)}
+            />
+            I confirm I followed the instructions above and want a 3D model.
+          </label>
+
+          <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
+            When you submit, original photos (not just Cloudinary URLs) will be uploaded to our server to create a WebODM task.
+          </div>
+
+          {webodmStatus && (
+            <div style={{ marginTop: 8, color: "#0b6" }}>
+              <strong>WebODM:</strong> {webodmStatus}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
   const renderBooksSportsHobbiesForm = () => {
     // Step 1: Subcategory selection
     if (!selectedSubcategory) {
@@ -929,7 +1336,7 @@ export default function Sell() {
             <option value="Like New">Like New</option>{" "}
             <option value="Used">Used</option> <option value="Old">Old</option>{" "}
           </select>{" "}
-          <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+          <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
           {renderLocation(formData)}
           <button type="submit" className="submit-btn">
             {" "}
@@ -976,10 +1383,14 @@ export default function Sell() {
             <option value="Fish">Fish</option>{" "}
             <option value="Other">Other</option>{" "}
           </select>{" "}
-          <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+          <h4>Upload up to 20 Photos</h4> <Photo3DOptions />
+          {renderPhotoGrid()}
           {renderLocation(formData)}
+          {webodmStatus && <div className="webodm-status">WebODM: {webodmStatus}</div>}
+
           <button type="submit" className="submit-btn">
             {" "}
+
             Post Ad{" "}
           </button>{" "}
         </form>{" "}
@@ -1055,7 +1466,7 @@ export default function Sell() {
           required
         />{" "}
         {renderCommonFields()}
-        <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+        <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
         {renderLocation(formData)}
         <button type="submit" className="submit-btn">
           {" "}
@@ -1163,7 +1574,7 @@ export default function Sell() {
               />{" "}
             </>
           )}
-          <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+          <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
           {renderLocation(formData)}
           <button type="submit" className="submit-btn">
             {" "}
@@ -1281,7 +1692,7 @@ export default function Sell() {
             onChange={handleChange}
             required
           />{" "}
-          <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+          <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
           {renderLocation(formData)}
           <button type="submit" className="submit-btn">
             {" "}
@@ -1502,7 +1913,7 @@ export default function Sell() {
               />{" "}
             </>
           )}
-          <h4>Upload up to 20 Photos</h4> {renderPhotoGrid()}
+          <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
           {renderLocation(formData)}
           <button type="submit" className="submit-btn">
             {" "}
@@ -1549,3 +1960,5 @@ export default function Sell() {
     </div>
   );
 }
+
+  

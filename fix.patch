@@ -1,0 +1,23 @@
+*** Begin Patch
+*** Update File: server/routes/webodm.js
+@@
+-   const data = resp.data || {};
+-
+-   // robustly extract status/progress from multiple possible fields
+-  
+-   const rawStatus = taskData.status; 
+-    const status = typeof rawStatus === "string"
+-  ? rawStatus.toUpperCase()
+-  : (rawStatus?.name || "").toUpperCase();
+-
+-   let progress = Number(data.running_progress ?? data.upload_progress ?? data.progress ?? data.percent ?? data.percentage ?? 0);
++   const data = resp.data || {};
++
++   // robustly extract status/progress from multiple possible fields (use 'data' returned by axios)
++   const statusRaw = data.status ?? data.state ?? data.processing_status ?? data.task_status ?? "";
++   const status = typeof statusRaw === "string"
++     ? statusRaw.toUpperCase()
++     : (statusRaw?.name || "").toUpperCase();
++
++   let progress = Number(data.running_progress ?? data.upload_progress ?? data.progress ?? data.percent ?? data.percentage ?? 0);
+*** End Patch

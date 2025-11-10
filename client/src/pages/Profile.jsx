@@ -40,6 +40,7 @@ const Profile = () => {
     locationMode: "manual",
     manualLocation: { address: "", pincode: "" },
     gpsLocation: { type: "Point", coordinates: [0, 0] },
+    upiId: "", // ✅ New field
   });
 
   // Listen to Firebase user only once
@@ -73,6 +74,7 @@ const Profile = () => {
           locationMode: data.locationMode || "manual",
           manualLocation: data.manualLocation || { address: "", pincode: "" },
           gpsLocation: data.gpsLocation || { type: "Point", coordinates: [0, 0] },
+          upiId: data.upiId || "", // ✅ New line
         });
         setMongoId(data._id);
       })
@@ -269,18 +271,19 @@ const Profile = () => {
                   >
                     My Products
                   </button>
+                   {/*chat Dashboard for seller*/}
+                  <button
+                    className="sidebar-btn "
+                    onClick={handleNotification}
+                  >
+                    Chat Dashboard
+                  </button>
                   <button
                     className={`sidebar-btn text-start ${activeTab === "wishlist" ? "active-tab" : ""}`}
                     onClick={() => setActiveTab("wishlist")}
                   >
 
-                  {/*chat Dashboard for seller*/}
-                  <button
-                    className="btn btn-custom btn-info w-100 mb-2"
-                    onClick={handleNotification}
-                  >
-                    Chat Dashboard
-                  </button>
+                 
 
                     My Wishlist
                   </button>
@@ -322,6 +325,21 @@ const Profile = () => {
                     <textarea name="aboutMe" className="form-control" placeholder="About me..." value={formData.aboutMe} onChange={handleChange} />
                   </div>
 
+                  <div className="mb-3">
+  <input
+    type="text"
+    name="upiId"
+    className="form-control"
+    placeholder="Your UPI ID (e.g., ravi@okhdfcbank)"
+    value={formData.upiId}
+    onChange={handleChange}
+  />
+  <small className="text-muted">
+    Optional — buyers can pay you directly using this UPI ID.
+  </small>
+</div>
+
+
                   <div className="mb-3 d-flex gap-3">
                     <div className="form-check">
                       <input type="radio" className="form-check-input" checked={formData.locationMode === "manual"} onChange={() => setFormData({ ...formData, locationMode: "manual" })} />
@@ -362,19 +380,25 @@ const Profile = () => {
               )}
 
               {showChatDashboard && (
-                  <div className="chat-dashboard-wrapper mt-4 card shadow-sm border-0 rounded-3 p-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="mb-0">Chat Dashboard</h5>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => setShowChatDashboard(false)}
-                    >
-                        ✖ Close
-                    </button>
-                  </div>
-                  <ChatDashboard currentUserId={mongoId} />
-                  </div>
-        )}
+  <div className="chat-dashboard-wrapper mt-4 card shadow-sm border-0 rounded-3 p-3">
+    <div className="d-flex justify-content-between align-items-center mb-2">
+      <h5 className="mb-0">Chat Dashboard</h5>
+      <button
+        className="btn btn-sm btn-outline-danger"
+        onClick={() => setShowChatDashboard(false)}
+      >
+        ✖ Close
+      </button>
+    </div>
+
+    {!mongoId ? (
+      <p className="text-muted">Loading your chats...</p>
+    ) : (
+      <ChatDashboard currentUserId={mongoId} />
+    )}
+  </div>
+)}
+
 
 
               {activeTab === "myProducts" && (

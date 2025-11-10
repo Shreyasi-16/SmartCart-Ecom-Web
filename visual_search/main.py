@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
@@ -6,6 +7,14 @@ from PIL import Image
 import io
 import torch
 import clip  # OpenAI CLIP
+import sys,os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # project-root
+PYTHON_SERVICE_PATH = os.path.join(BASE_DIR, "Server", "python_service")
+sys.path.append(PYTHON_SERVICE_PATH)
+
+from products import router as products_router
+from compare_api import compare_router
 
 app = FastAPI()
 app.add_middleware(
@@ -22,6 +31,8 @@ model, preprocess = clip.load("ViT-B/32", device=device)
 
 class ImageUrl(BaseModel):
     url: str
+
+
 
 @app.post("/embed")
 def get_embedding(data: ImageUrl):
@@ -51,3 +62,33 @@ def get_embedding(data: ImageUrl):
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# -----------------------------------------------------------------------------
+# 🔹 Integrate Other APIs
+# -----------------------------------------------------------------------------
+app.include_router(products_router)  # ✅ from products.py
+app.include_router(compare_router)                     # ✅ from compare_api.py
+
+# -----------------------------------------------------------------------------
+# 🔹 Root Endpoint
+# -----------------------------------------------------------------------------
+@app.get("/")
+def home():
+    return {
+        "message": "🚀 Unified FastAPI running with Visual Search, Product, and Compare APIs",
+        "available_endpoints": {
+            "visual_search": "/embed",
+            "products": "/products",
+            "compare": "/compare/{productId}"
+        }
+    }
+
+# -----------------------------------------------------------------------------
+# 🔹 Run the Unified Server
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+
+

@@ -5,6 +5,8 @@ const cloudinary = require("../config/cloudinaryConfig");
 const axios = require("axios");
 const router = express.Router();
 
+
+
 // POST /api/sell
 router.post("/", async (req, res) => {
   try {
@@ -70,6 +72,7 @@ const photosWithEmbeddings = await Promise.all(
     res.status(201).json({
       message: "Ad posted successfully",
       product: newProduct,
+      productId: newProduct._id.toString()
     });
   } catch (err) {
     console.error("❌ Error inserting product:", err);

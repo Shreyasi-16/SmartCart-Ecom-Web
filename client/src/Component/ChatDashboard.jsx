@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import ChatRoom from "../Component/ChatRoom";
-import './ChatDashboard.css'; 
+import "./ChatDashboard.css";
 
 const API_URL = "http://localhost:5000/api/chats";
 
+// ✅ Proper template literal for unique chat ID
 const generateChatId = (buyerId, sellerId, productId) => {
   return `${buyerId}_${sellerId}_${productId}`;
 };
@@ -12,22 +13,23 @@ const generateChatId = (buyerId, sellerId, productId) => {
 const ChatDashboard = ({ currentUserId }) => {
   const [chats, setChats] = useState([]);
   const [firebaseUid, setFirebaseUid] = useState(null);
-  const [openChat, setOpenChat] = useState(null); // store selected chat
-  
-//for display buyer name on Dashboard
-  const [userNames, setUserNames] = useState({});
+  const [openChat, setOpenChat] = useState(null);
+  const [userNames, setUserNames] = useState({}); // for buyer/seller names
 
-const fetchUserName = async (userId) => {
-  if (!userId || userNames[userId]) return;
-  try {
-    const res = await fetch(`http://localhost:5000/api/users/${userId}`);
-    const user = await res.json();
-    setUserNames((prev) => ({ ...prev, [userId]: user.name }));
-  } catch (err) {
-    console.error("Error fetching user:", err);
-  }
-};
+  // ✅ Fetch user names only when needed
+  const fetchUserName = async (userId) => {
+    if (!userId || userNames[userId]) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/${userId}`);
+      if (!res.ok) throw new Error("Failed to fetch user");
+      const user = await res.json();
+      setUserNames((prev) => ({ ...prev, [userId]: user.name }));
+    } catch (err) {
+      console.error("Error fetching user:", err);
+    }
+  };
 
+  // ✅ Get Firebase UID
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -36,8 +38,9 @@ const fetchUserName = async (userId) => {
     return () => unsubscribe();
   }, []);
 
+  // ✅ Fetch chats for the logged-in user
   useEffect(() => {
-    if (!firebaseUid) return;
+    if (!firebaseUid || !currentUserId) return;
 
     const fetchChats = async () => {
       try {
@@ -45,12 +48,18 @@ const fetchUserName = async (userId) => {
         if (!res.ok) throw new Error("Failed to fetch chats");
         const data = await res.json();
         setChats(data);
+
+        // Preload user names
+        data.forEach((chat) => {
+          fetchUserName(chat.buyerId);
+          fetchUserName(chat.sellerId);
+        });
       } catch (err) {
         console.error("Error fetching chats:", err);
       }
     };
 
-    if (currentUserId) fetchChats();
+    fetchChats();
   }, [firebaseUid, currentUserId]);
 
   return (
@@ -62,21 +71,22 @@ const fetchUserName = async (userId) => {
         ) : (
           chats.map((chat) => (
             <li
-              key={generateChatId(chat.buyerId, chat.sellerId, chat.product._id)}
+              key={generateChatId(chat.buyerId, chat.sellerId, chat.product?._id)}
               onClick={() => setOpenChat(chat)}
               className="chat-item"
             >
               <strong>Product:</strong> {chat.product?.title || "Unknown"} <br />
-              <strong>Buyer Name:</strong> {chat.buyerId?.name} <br />
+              <strong>Buyer:</strong>{" "}
+              {userNames[chat.buyerId] || chat.buyerId || "Loading..."}
             </li>
           ))
         )}
       </ul>
 
-      {/* Floating ChatRoom */}
+      {/* ✅ Floating Chat Room */}
       {openChat && (
         <ChatRoom
-          chatId={generateChatId(openChat.buyerId, openChat.sellerId, openChat.product._id)}
+          chatId={generateChatId(openChat.buyerId, openChat.sellerId, openChat.product?._id)}
           chat={openChat}
           onClose={() => setOpenChat(null)}
         />

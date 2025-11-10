@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import ChatBox from "../Component/ChatBox";
 import { Link } from "react-router-dom";
 import SmartPricingAdvisor from "../Component/SmartPricingAdvisor"; // add this import
 import "./ProductPage.css";
+import "@google/model-viewer"; // ✅ NEW — for 3D model rendering
+import EphemeralPayment from "../Component/EphemeralPayment"; // 💳 UPI Payment Modal
+import SimilarProducts from "../Component/SimilarProducts";
+import ComparisonTable from "../Component/ComparisonTable";
 
 const ProductPage = () => {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -13,7 +17,26 @@ const ProductPage = () => {
   const [error, setError] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [chat, setChat] = useState(null);
+    const [similarProducts, setSimilarProducts] = useState([]);
+
   const [chatId, setChatId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+
+   // ✅ NEW — to auto-refresh product until 3D model is ready
+  const pollRef = useRef(null);
+
+  const fetchProduct = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/products/${productId}`);
+      if (!res.ok) throw new Error("Failed to fetch product details");
+      const data = await res.json();
+      setProduct(data.data ?? data);
+    } catch (err) {
+      console.error("Error fetching product details:", err);
+      setError(err.message);
+   }
+  };
 
   const navigate = useNavigate();
   const { productId } = useParams();
@@ -47,20 +70,20 @@ const ProductPage = () => {
   }, [firebaseUser]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/products/${productId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch product details");
-        return res.json();
-      })
-      .then((data) => {
-        console.log("Fetched product:", data);
-        setProduct(data.data); // ✅ unwrap
-      })
-      .catch((err) => {
-        console.error("Error fetching product details:", err);
-        setError(err.message);
-      });
-  }, [productId]);
+     fetchProduct();
+  return () => clearInterval(pollRef.current);
+}, [productId]);
+   
+
+  // ✅ NEW — auto-refresh when model is processing
+  useEffect(() => {
+    clearInterval(pollRef.current);
+    if (product?.modelStatus === "processing") {
+      pollRef.current = setInterval(fetchProduct, 5000);
+    }
+    return () => clearInterval(pollRef.current);
+  }, [product?.modelStatus]);
+
   //seller info
   // Fetch seller info once product is loaded
   useEffect(() => {
@@ -101,6 +124,22 @@ const ProductPage = () => {
       .finally(() => setSellerLoading(false));
   }, [product]);
 
+  // Fetch similar products once main product is loaded
+    useEffect(() => {
+      if (!productId) return;
+      setSimilarProducts([]); // clear previous data to avoid flashing old ones
+  
+      fetch(`http://127.0.0.1:8000/products/similar/${productId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("🔍 Similar API Response:", data);
+          setSimilarProducts(data.data || []);
+        })
+        .catch((err) => {
+          console.error("Error fetching similar products:", err);
+        });
+    }, [productId]);
+    
   const [mainPhoto, setMainPhoto] = useState(product?.photos?.[0]?.url);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -193,6 +232,47 @@ const ProductPage = () => {
             <h1>{product.title}</h1>
             <p>{product.description}</p>
             <p>Price: ₹{product.price}</p>
+            {/* ✅ 3D Model Viewer Section */}
+{product.modelStatus === "none" && (
+  <p>No 3D model uploaded for this product.</p>
+)}
+
+{product.modelStatus === "processing" && (
+  <p>3D model is being generated... Progress: {product.lastProgress ?? 0}%</p>
+)}
+
+{product.modelStatus === "failed" && (
+  <p style={{ color: "red" }}>Model generation failed.</p>
+)}
+
+{product.modelStatus === "ready" && product.modelFileId && (
+  <div style={{ marginTop: "20px" }}>
+    <model-viewer
+      src={`http://localhost:5000/api/models/${product.modelFileId}`}
+      alt={`${product.title} 3D model`}
+      camera-controls
+      auto-rotate
+      ar
+      style={{
+        width: "100%",
+        height: "500px",
+        background: "#fff",
+        borderRadius: "8px",
+      }}
+    />
+    <div style={{ marginTop: "10px" }}>
+      <a
+        href={`http://localhost:5000/api/models/${product.modelFileId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        download
+      >
+        Download 3D Model (.glb)
+      </a>
+    </div>
+  </div>
+)}
+
             {product.sub_category && <p>Category: {product.sub_category}</p>}
             {product.ratings && <p>Ratings: {product.ratings}</p>}
             {/* Seller Info */}
@@ -235,6 +315,15 @@ const ProductPage = () => {
               </section>
             </div>
             {!isSeller && (
+  <button
+    className="buy-now-button"
+    onClick={() => setShowPaymentModal(true)}
+  >
+    🛒 Buy Now
+  </button>
+)}
+
+            {!isSeller && (
             <button className="chat-btn" onClick={handleChat} disabled={!mongoId}>
               {!mongoId ? "Loading...USer not log in" : "Chat"}
             </button>
@@ -246,6 +335,27 @@ const ProductPage = () => {
         <div className="row ">
           <SmartPricingAdvisor product={product} />
         </div>
+             <section className="comparison-section mt-6">
+                      <ComparisonTable key={product._id} productId={product._id} />
+                    </section>
+<div className="similar-products">
+                    <SimilarProducts products={similarProducts} />
+                    {similarProducts.length === 0 && <p></p>}
+                    <div className="similar-products-grid">
+                      {similarProducts.map((p) => (
+                        <div key={p._id} className="similar-product-card">
+                          <img
+                            src={p.photos?.[0]?.url || "/defaultBG.jpg"}
+                            alt={p.title}
+                            className="similar-product-image"
+                          />
+                              <p>{p.title}</p>
+                                        <p>₹{p.price}</p>
+                                        <Link to={`/product/${p._id}`}>View</Link>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
 
         {/* Seller notice */}
       {isSeller && (
@@ -264,6 +374,23 @@ const ProductPage = () => {
         />
       )}
       </div>
+     {showPaymentModal && (
+  <EphemeralPayment
+    product={{
+      ...product,
+      sellerName: seller?.name || "Seller",
+      sellerUpiId: seller?.upiId || "", // ✅ Auto-prefill seller UPI ID if it exists
+    }}
+    onClose={() => setShowPaymentModal(false)}
+  />
+)}
+
+        
+           
+            
+                    
+
+
     </div>
   );
 };

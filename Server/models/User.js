@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema(
     aboutMe: { type: String, default: "" },
     photoURL: { type: String, default: "" },
     joinedAt: { type: Date, default: Date.now },
+    // ✅ Optional UPI ID (for P2P payments)
+    upiId: {
+      type: String,
+      default: "",
+      trim: true,
+      match: [/^[\w.\-]{2,256}@[\w]{2,64}$/, "Invalid UPI ID format"], // basic validation
+    },
 
      city: String,
     state: String,
@@ -27,6 +34,7 @@ const userSchema = new mongoose.Schema(
 
     // Which mode is active
     locationMode: { type: String, enum: ["manual", "gps"], default: "manual" },
+
   },
   { collection: "users" }
 );
