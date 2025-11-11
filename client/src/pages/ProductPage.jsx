@@ -374,13 +374,15 @@ const ProductPage = () => {
         />
       )}
       </div>
-     {showPaymentModal && (
+ {showPaymentModal && (
   <EphemeralPayment
     product={{
       ...product,
       sellerName: seller?.name || "Seller",
-      sellerUpiId: seller?.upiId || "", // ✅ Auto-prefill seller UPI ID if it exists
+      sellerUpiId: seller?.upiId || "",
+      seller: seller?._id || product?.seller, // ✅ ensures sellerId is always present
     }}
+    buyerId={mongoId} // ✅ pass logged-in buyer’s Mongo ID
     onClose={() => setShowPaymentModal(false)}
   />
 )}

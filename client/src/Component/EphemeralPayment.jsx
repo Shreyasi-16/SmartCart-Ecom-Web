@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import axios from "axios";
-import QRCode from "react-qr-code"; // ✅ New import
+import QRCode from "react-qr-code";
 
-export default function EphemeralPayment({ product }) {
- 
+export default function EphemeralPayment({ product, buyerId, onClose }) {
+  const [upiId, setUpiId] = useState(product.sellerUpiId || "");
   const [upiLink, setUpiLink] = useState("");
   const [showQR, setShowQR] = useState(false);
-  const [upiId, setUpiId] = useState(product.sellerUpiId || "");
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [message, setMessage] = useState("");
 
-
+  // 🔹 Step 1: Generate UPI Link
   const handleGenerate = async () => {
     try {
       const { data } = await axios.post("http://localhost:5000/api/payment/generate", {
-
         upiId,
         name: product.sellerName,
         amount: product.price,
@@ -33,13 +33,42 @@ export default function EphemeralPayment({ product }) {
     }
   };
 
+  // 🔹 Step 2: Buyer clicks “I Paid”
+const handleIPaid = async () => {
+  const payload = {
+    productId: product?._id || product?.id,
+    buyerId: buyerId, // should come from prop
+    sellerId: product?.seller?._id || product?.seller, // ✅ fixed
+    amount: product?.price,
+  };
+
+  console.log("🧾 Sending payment payload:", payload);
+
+  if (!payload.buyerId || !payload.sellerId) {
+    alert("Buyer or Seller ID is missing — cannot confirm payment.");
+    return;
+  }
+
+  try {
+    const res = await axios.post("http://localhost:5000/api/paymentStatus/buyer-confirm", payload);
+    console.log("✅ Server response:", res.data);
+    setPaymentDone(true);
+    setMessage("✅ Payment marked as done. Waiting for seller confirmation.");
+  } catch (err) {
+    console.error("❌ Payment confirm error:", err.response?.data || err.message);
+    setMessage("❌ Failed to confirm payment.");
+  }
+};
+
+
+
   return (
     <div
       style={{
         border: "1px solid #ddd",
         padding: 20,
         borderRadius: 10,
-        width: 300,
+        width: 320,
         background: "#fff",
         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
       }}
@@ -51,7 +80,7 @@ export default function EphemeralPayment({ product }) {
 
       <input
         type="text"
-        placeholder="Enter Seller UPI ID (e.g., ravi@okhdfcbank)"
+        placeholder="Seller UPI ID (e.g., ravi@okhdfcbank)"
         value={upiId}
         onChange={(e) => setUpiId(e.target.value)}
         style={{
@@ -80,7 +109,7 @@ export default function EphemeralPayment({ product }) {
 
       {showQR && upiLink && (
         <div style={{ marginTop: 20, textAlign: "center" }}>
-          <p>Scan to Pay</p>
+          <p>📱 Scan or tap to pay via UPI</p>
           <div
             style={{
               background: "white",
@@ -91,8 +120,57 @@ export default function EphemeralPayment({ product }) {
           >
             <QRCode value={upiLink} size={180} />
           </div>
+
+          {!paymentDone && (
+            <button
+              onClick={handleIPaid}
+              style={{
+                marginTop: 15,
+                backgroundColor: "#2e7d32",
+                color: "#fff",
+                border: "none",
+                padding: "10px 15px",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+            >
+              ✅ I’ve Paid
+            </button>
+          )}
+
+          {/* ✅ Green Alert Box after clicking “I Paid” */}
+          {paymentDone && (
+            <div
+              style={{
+                marginTop: 15,
+                padding: 12,
+                borderRadius: 8,
+                backgroundColor: "#d4edda",
+                border: "1px solid #c3e6cb",
+                color: "#155724",
+                textAlign: "center",
+                fontWeight: "500",
+              }}
+            >
+              {message}
+            </div>
+          )}
         </div>
       )}
+
+      <button
+        onClick={onClose}
+        style={{
+          marginTop: 15,
+          background: "transparent",
+          border: "none",
+          color: "#555",
+          cursor: "pointer",
+          textDecoration: "underline",
+        }}
+      >
+        Close
+      </button>
     </div>
   );
 }

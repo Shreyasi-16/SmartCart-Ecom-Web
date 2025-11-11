@@ -40,8 +40,13 @@ app.use('/api/pricing', pricingRoute);  //pricing route
 console.log("[index] mounted /api/pricing");
 const paymentRoutes = require("./routes/payment");
 app.use("/api/payment", paymentRoutes);
+const paymentStatusRoutes = require("./routes/paymentStatus");
+app.use("/api/paymentStatus", paymentStatusRoutes);
 
 
+
+
+app.use("/uploads", express.static("uploads")); // ✅ serve uploaded files
 const modelsRouter = require("./routes/models");
 app.use("/api", modelsRouter);
 

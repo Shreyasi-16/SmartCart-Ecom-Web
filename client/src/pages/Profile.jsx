@@ -9,6 +9,12 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import ChatDashboard from "../Component/ChatDashboard";
+import PaymentProofForm from "../Component/PaymentProofForm";
+import BuyerPaymentDashboard from "../Component/BuyerPaymentDashboard";
+import axios from "axios";
+
+import SellerPaymentDashboard from "../Component/SellerPaymentDashboard";
+
 
 const Profile = () => {
   const auth = getAuth();
@@ -23,6 +29,8 @@ const Profile = () => {
   const [showUserProducts, setShowUserProducts] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profileInfo"); // default tab
+  const [sellerPayments, setSellerPayments] = useState([]);
+
 
   //for chatboard
   const [showChatDashboard, setShowChatDashboard] = useState(false);
@@ -55,6 +63,16 @@ const Profile = () => {
     });
     return () => unsubscribe();
   }, [auth]);
+
+  // ✅ Fetch all payments for this seller
+useEffect(() => {
+  if (!mongoId) return;
+  fetch(`http://localhost:5000/api/paymentStatus/seller/${mongoId}`)
+    .then((res) => res.json())
+    .then((data) => setSellerPayments(data))
+    .catch((err) => console.error("Error fetching seller payments:", err));
+}, [mongoId]);
+
 
   // Fetch Mongo user data when Firebase user is available
   useEffect(() => {
@@ -205,6 +223,11 @@ const Profile = () => {
     {
       setShowChatDashboard(true);
     }
+// ✅ Get payment info for a specific product
+const getPaymentForProduct = (productId) => {
+  if (!sellerPayments || sellerPayments.length === 0) return null;
+  return sellerPayments.find((payment) => payment.productId?._id === productId);
+};
 
    return (
     <div className="profile-wrapper">
@@ -271,6 +294,8 @@ const Profile = () => {
                   >
                     My Products
                   </button>
+ 
+
                    {/*chat Dashboard for seller*/}
                   <button
                     className="sidebar-btn "
@@ -311,6 +336,8 @@ const Profile = () => {
                   <p><strong>State:</strong> {formData.state}</p>
                 </div>
               )}
+
+
 
                {activeTab === "updateProfile" && (
                 <form className="card p-4" onSubmit={handleUpdateProfile}>
@@ -398,58 +425,92 @@ const Profile = () => {
     )}
   </div>
 )}
+{/* My Products (Seller Payment Integration) */}
+           {activeTab === "myProducts" && (
+  <div className="products-section">
+    <h4>My Products</h4>
+    {productsLoading ? (
+      <p>Loading...</p>
+    ) : userProducts.length === 0 ? (
+      <p>No products yet.</p>
+    ) : (
+      <div className="row g-3">
+        {userProducts.map((p) => {
+          const payment = getPaymentForProduct(p._id);
+          return (
+            <div key={p._id} className="col-md-6">
+              <div className="card h-100">
+                <img
+                  src={p.photos?.[0] || DEFAULT_PRODUCT_IMAGE}
+                  alt={p.title}
+                  onError={(e) => (e.target.src = DEFAULT_PRODUCT_IMAGE)}
+                />
+                <div className="card-body">
+                  <h5>{p.title}</h5>
+                  <p className="text-success">₹ {p.price}</p>
+                  <p className="small text-muted">
+                    {p.description?.substring(0, 60) || "No description"}...
+                  </p>
+                  <button
+                    className="btn btn-primary w-100 mb-2"
+                    onClick={() => navigate(`/product/${p._id}`)}
+                  >
+                    View Details
+                  </button>
 
-
-
-              {activeTab === "myProducts" && (
-                <div className="products-section">
-                  <h4>My Products</h4>
-                  {productsLoading ? (
-                    <p>Loading...</p>
-                  ) : userProducts.length === 0 ? (
-                    <p>No products yet.</p>
-                  ) : (
-                    <div className="row g-3">
-                      {userProducts.map((p) => (
-                        <div key={p._id} className="col-md-6">
-                          <div className="card h-100">
-                             <img
-                                src={
-                                  p.photos && p.photos.length > 0
-                                    ? p.photos[0]
-                                    : DEFAULT_PRODUCT_IMAGE
+                  {/* ✅ Payment Status Section */}
+                  {payment ? (
+                    <>
+                      {payment.status === "buyer_confirmed" && (
+                        <>
+                          <p className="text-warning mb-1">
+                            💰 Buyer marked as paid (₹{payment.amount})
+                          </p>
+                          <button
+                            className="btn btn-success btn-sm w-100"
+                            onClick={async () => {
+                              await axios.post(
+                                "http://localhost:5000/api/paymentStatus/seller-confirm",
+                                {
+                                  productId: p._id,
+                                  buyerId: payment.buyerId._id,
+                                  sellerId: mongoId,
                                 }
-                                
-                                alt={p.title}
-                              
-                                onError={(e) => {
-                                  e.target.src = DEFAULT_PRODUCT_IMAGE;
-                                }}
-                              />
-                            <div className="card-body">
-                              <h5 className="card-title">{p.title}</h5>
-                              <p className="text-success">₹ {p.price}</p>
-                               <p className="card-text small text-muted flex-grow-1">
-                                  {p.description
-                                    ? p.description.substring(0, 60) + "..."
-                                    : "No description"}
-                                </p>
-                                <button
-                                  className="btn btn-primary mt-auto w-100"
-                                  onClick={() =>
-                                    navigate(`/product/${p._id}`)
-                                  }
-                                >
-                                  View Details
-                                </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                              );
+                              alert("✅ Payment marked as received!");
+                              window.location.reload();
+                            }}
+                          >
+                            Mark as Received
+                          </button>
+                        </>
+                      )}
+
+                      {payment.status === "completed" && (
+                        <p className="text-success mb-0">
+                          ✅ Payment received and completed
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-muted small mb-0">
+                      No payment activity yet.
+                    </p>
                   )}
                 </div>
-              )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
+
+
+
+             
+              
 
               {activeTab === "wishlist" && (
                 <div className="card p-4">
