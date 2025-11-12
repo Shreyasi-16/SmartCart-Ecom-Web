@@ -2,8 +2,6 @@ const express = require("express");
 const { ObjectId } = require("mongodb");
 const uploadToCloudinary = require("../config/cloudinary");
 const fileUpload = require("express-fileupload");
-const Product = require("../models/Product");
-
 const router = express.Router();
 let productsCollection;
 
@@ -109,6 +107,38 @@ router.get("/fetchProducts", async (req, res) => {
   }
 });
 
+// update product verification
+router.patch("/updateVerification/:productId", async (req, res) => {
+  try {
+    if (!productsCollection) return res.status(500).json({ message: "Collection not set" });
+
+    const { productId } = req.params;
+    const { verificationId, verificationStatus } = req.body;
+
+    // Build update object dynamically
+    const updateFields = {};
+    if (verificationId) updateFields.verificationId = new ObjectId(verificationId);
+    if (verificationStatus) updateFields.verificationStatus = verificationStatus;
+
+    if (Object.keys(updateFields).length === 0)
+      return res.status(400).json({ message: "No fields to update" });
+
+    const result = await productsCollection.updateOne(
+      { _id: new ObjectId(productId) },
+      { $set: updateFields }
+    );
+
+    if (!result.matchedCount)
+      return res.status(404).json({ message: "Product not found" });
+
+    res.status(200).json({ message: "Verification updated successfully" });
+  } catch (err) {
+    console.error(" Error updating verification:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
 // SEARCH (unchanged)
 router.get("/search", async (req, res) => {
   try {
@@ -157,87 +187,22 @@ router.get("/user/:sellerId", async (req, res) => {
 });
 
 // product by id (unchanged)
-// router.get("/:id", async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     if (!productsCollection) return res.status(500).json({ message: "Collection not set" });
-
-//     let mongoQuery;
-//     try { mongoQuery = { _id: new ObjectId(id) }; }
-//     catch { mongoQuery = { _id: id }; }
-
-//     const result = await productsCollection.findOne(mongoQuery);
-//     if (!result) return res.status(404).json({ message: "Product not found" });
-//     res.status(200).json({ data: result });
-//   } catch (err) {
-//     console.error("❌ Error fetching product by ID:", err);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// });
-
-// product by id (unchanged)
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    if (!productsCollection) return res.status(500).json({ message: "Collection not set" });
 
-    // use mongoose Product instead of raw collection
-    const product = await Product.findById(id).lean();
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    let mongoQuery;
+    try { mongoQuery = { _id: new ObjectId(id) }; }
+    catch { mongoQuery = { _id: id }; }
 
-    return res.status(200).json({ data: product });
+    const result = await productsCollection.findOne(mongoQuery);
+    if (!result) return res.status(404).json({ message: "Product not found" });
+    res.status(200).json({ data: result });
   } catch (err) {
     console.error("❌ Error fetching product by ID:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-// POST /products/:id/attach-model
-router.post("/:id/attach-model", async (req, res) => {
-  try {
-    const prodId = req.params.id;
-    const { modelFileId, modelUrls, webodmTaskId, modelStatus } = req.body;
-
-    console.log("[attach-model] incoming for:", prodId);
-    console.log("[attach-model] body:", req.body);
-
-    // Build the update object dynamically
-    // const update = {};
-    // if (modelFileId) update.modelFileId = modelFileId;
-    // if (Array.isArray(modelUrls) && modelUrls.length) update.modelUrls = modelUrls;
-    // if (webodmTaskId) update.webodmTaskId = webodmTaskId;
-    // if (modelStatus) update.modelStatus = modelStatus;
-
-    // // 🟩 Automatically set 'ready' if fileId present
-    // if (modelFileId && !update.modelStatus) update.modelStatus = "ready";
-
-    // Build the update object dynamically
-const update = {};
-if (modelFileId) update.modelFileId = modelFileId;
-if (Array.isArray(modelUrls) && modelUrls.length) update.modelUrls = modelUrls;
-if (webodmTaskId) update.webodmTaskId = webodmTaskId;
-if (modelStatus) update.modelStatus = modelStatus;
-if (req.body.lastProgress !== undefined) update.lastProgress = req.body.lastProgress;
-
-// 🟩 Automatically set 'ready' if fileId present
-if (modelFileId && !update.modelStatus) update.modelStatus = "ready";
-
-    const product = await Product.findByIdAndUpdate(
-      prodId,
-      { $set: update },
-      { new: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    console.log("✅ Model attached successfully");
-    return res.json({ message: "Model attached", product });
-  } catch (err) {
-    console.error("❌ attach-model error:", err);
-    return res
-      .status(500)
-      .json({ error: err.message || "attach-model failed" });
-  }
-});
 module.exports = { router, setCollection };

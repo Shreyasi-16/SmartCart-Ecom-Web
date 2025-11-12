@@ -32,7 +32,19 @@ export default function Sell() {
   const [userId, setUserId] = useState(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [fetchedGPS, setFetchedGPS] = useState({ lat: 0, lng: 0 });
-
+ const [showVerification, setShowVerification] = useState(false);
+  const requiredFields = ["title", "brand", "model", "year", "price", "description"];
+  const [verificationStatus, setVerificationStatus] = useState("");
+   const handleVerificationToggle = () => {
+    const allFilled = requiredFields.every(
+      (field) => formData[field] && formData[field].trim() !== ""
+    );
+    if (!allFilled) {
+      alert("Please complete all required fields before opening verification.");
+      return;
+    }
+    setShowVerification(!showVerification);
+  };
 
   // Add these states (store original File objects for WebODM uploads, and 3D preferences)
 const [photosFiles, setPhotosFiles] = useState(Array(20).fill(null)); // store original File objects
@@ -61,6 +73,8 @@ const [webodmStatus, setWebodmStatus] = useState(null); // show upload / process
     locationMode: "",
     manualLocation: { address: "", pincode: "" },
     gpsLocation: { type: "Point", coordinates: [0, 0] },
+     verificationId: null,
+    verificationStatus: "",
   });
 
   useEffect(() => {
@@ -829,6 +843,9 @@ const [webodmStatus, setWebodmStatus] = useState(null); // show upload / process
         formData.locationMode === "gps"
           ? formData.gpsLocation
           : { type: "Point", coordinates: [0, 0] },
+                // Add verificationId here
+    verificationId: formData.verificationId || null,
+    verificationStatus: formData.verificationStatus ,
     };
     // If user requested 3D model, and they confirmed instructions, upload original files to WebODM via your backend
 // let webodmModels = null;
@@ -1207,6 +1224,53 @@ try {
         onChange={handleChange}
         required
       />
+      <div className="mt-3">
+        <label>Verification *</label>
+      
+        {/*  Show button only if category is NOT 8 */}
+        {selectedCategory !== 8 ? (
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={() => setShowVerification(true)}
+          >
+            Open Verification
+          </button>
+        ) : (
+          <p className="text-muted">Verification not required for this category.</p>
+        )}
+      </div>
+      
+      {/* Open modal only if category is NOT 8 */}
+      {selectedCategory !== 8 && (
+        <VerificationForm
+          isOpen={showVerification}
+          onClose={(verificationId, verificationStatus) => {
+            console.log("Verification completed:", verificationId, verificationStatus);
+            setShowVerification(false);
+            setVerificationStatus(verificationStatus);
+      
+            if (verificationId) {
+              console.log(" Verification created with ID:", verificationId);
+      
+              setFormData((prev) => ({
+                ...prev,
+                verificationId,
+                verificationStatus,
+              }));
+            }
+          }}
+          sellerId={user.uid}
+          categoryId={selectedCategory}
+        />
+      )}
+      
+      {/* Show status as before */}
+      {verificationStatus && (
+        <div className="alert alert-info mt-3">
+          Current Verification Status: {verificationStatus}
+        </div>
+      )}
       
     </>
   );

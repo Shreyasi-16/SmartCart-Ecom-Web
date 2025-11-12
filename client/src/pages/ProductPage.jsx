@@ -9,6 +9,7 @@ import "@google/model-viewer"; // ✅ NEW — for 3D model rendering
 import EphemeralPayment from "../Component/EphemeralPayment"; // 💳 UPI Payment Modal
 import SimilarProducts from "../Component/SimilarProducts";
 import ComparisonTable from "../Component/ComparisonTable";
+import ViewVerificationData from "../Component/ViewVerificationData";  //verification status
 
 const ProductPage = () => {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -46,6 +47,9 @@ const ProductPage = () => {
   const [seller, setSeller] = useState(null);
   const [sellerLoading, setSellerLoading] = useState(false);
   const [sellerError, setSellerError] = useState(null);
+
+  //view verification component
+    const [showVerification, setShowVerification] = useState(false);
 
   // Track Firebase login
   useEffect(() => {
@@ -232,6 +236,31 @@ const ProductPage = () => {
             <h1>{product.title}</h1>
             <p>{product.description}</p>
             <p>Price: ₹{product.price}</p>
+             {/*product verification status*/}
+              {/* Show verification only if category is not 8 */}
+            {product.categoryId !== 8 && product.categoryId !== "8" && (
+              <div>
+                <p>Product verification status:</p>
+                <button
+                  type="button"
+                  onClick={() => setShowVerification(true)}
+                  className="verify-btn"
+                >
+                  {product.verificationStatus}
+                </button>
+            
+                <ViewVerificationData
+                  isOpen={showVerification}
+                  onClose={() => setShowVerification(false)}
+                  product={product}
+                />
+              </div>
+            )}
+            <ViewVerificationData
+              isOpen={showVerification}
+              onClose={() => setShowVerification(false)}
+              product={product}
+            />
             {/* ✅ 3D Model Viewer Section */}
 {product.modelStatus === "none" && (
   <p>No 3D model uploaded for this product.</p>
@@ -332,30 +361,36 @@ const ProductPage = () => {
         </div>
 
         {/* Row 2: Price Advisor */}
-        <div className="row ">
-          <SmartPricingAdvisor product={product} />
-        </div>
-             <section className="comparison-section mt-6">
-                      <ComparisonTable key={product._id} productId={product._id} />
-                    </section>
-<div className="similar-products">
-                    <SimilarProducts products={similarProducts} />
-                    {similarProducts.length === 0 && <p></p>}
-                    <div className="similar-products-grid">
-                      {similarProducts.map((p) => (
-                        <div key={p._id} className="similar-product-card">
-                          <img
-                            src={p.photos?.[0]?.url || "/defaultBG.jpg"}
-                            alt={p.title}
-                            className="similar-product-image"
-                          />
-                              <p>{p.title}</p>
-                                        <p>₹{p.price}</p>
-                                        <Link to={`/product/${p._id}`}>View</Link>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+               <div className="row ">
+                 <SmartPricingAdvisor product={product} />
+               </div>
+                    <section className="comparison-section mt-6">
+                             <ComparisonTable key={product._id} productId={product._id} />
+                           </section>
+               <div className="similar-products">
+                 <SimilarProducts products={similarProducts} />
+       
+                 {similarProducts && similarProducts.length === 0 && (
+                   <p>No similar products found.</p>
+                 )}
+       
+                 {similarProducts && similarProducts.length > 0 && (
+                   <div className="similar-products-grid">
+                     {similarProducts.map((p) => (
+                       <div key={p._id} className="similar-product-card">
+                         <img
+                           src={p.photos?.[0]?.url || "/defaultBG.jpg"}
+                           alt={p.title}
+                           className="similar-product-image"
+                         />
+                         <p>{p.title}</p>
+                         <p>₹{p.price}</p>
+                         <Link to={`/product/${p._id}`}>View</Link>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
 
         {/* Seller notice */}
       {isSeller && (

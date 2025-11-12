@@ -1,0 +1,55 @@
+.verification-modal .modal-content {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border: none;
+  overflow: hidden;
+}
+
+.verification-header {
+  background: linear-gradient(90deg, #007bff, #00a3ff);
+  color: white;
+}
+
+.verification-content {
+  padding: 10px 5px;
+}
+
+.section-title {
+  margin-top: 20px;
+  font-weight: bold;
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.uploaded-files-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.uploaded-file-card {
+  text-align: center;
+  width: 120px;
+}
+
+.uploaded-file-preview {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.uploaded-file-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.file-name {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #333;
+}

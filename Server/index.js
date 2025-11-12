@@ -20,6 +20,8 @@ const messageRoutes = require("./routes/messagesRoutes");
 const visualSearchRouter = require("./routes/visualSearch");
 const pricingRoute = require('./routes/pricing'); //pricing
 console.log("[index] pricingRoute typeof:", typeof pricingRoute);
+//for verification
+const verificationRoutes = require("./routes/verificationRoutes");
 
 const app = express();
 
@@ -42,7 +44,8 @@ const paymentRoutes = require("./routes/payment");
 app.use("/api/payment", paymentRoutes);
 const paymentStatusRoutes = require("./routes/paymentStatus");
 app.use("/api/paymentStatus", paymentStatusRoutes);
-
+//verification route call
+app.use("/api/verification", verificationRoutes);
 
 
 

@@ -36,6 +36,18 @@ const productSchema = new mongoose.Schema({
 
     // Which mode is active
     locationMode: { type: String, enum: ["manual", "gps"], default: "manual" },
+        //verification id
+        verificationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Verification",
+        default: null, // null if not yet assigned
+      },
+    
+      verificationStatus: {
+        type: String,
+        enum: ["pending", "verified", "suspect","Document Uploaded"],
+        default: "pending", // default status
+      },
   
      modelFileId: String,   // GridFS id as string
   modelStatus: { type: String, default: "none" }, // none | processing | ready | failed

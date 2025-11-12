@@ -4,35 +4,33 @@
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.comparison-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 15px;
+  max-width: 1200px; /* set your desired max width */
+  width: 100%;        /* allow it to shrink on smaller screens */
+   /* center the table wrapper */
 }
 
 .comparison-table-scroll {
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow-x: hidden;  /* disable horizontal scroll */
+  width: 100%;
 }
 
 .comparison-table {
   display: flex;
+  width: 100%;       /* take full wrapper width */
   border-top: 1px solid #ddd;
-  min-width: 700px; /* ensures scroll on small screens */
+  flex-wrap: nowrap;
 }
 
 .features-column {
-  flex: 0 0 200px;
+  flex: 0 0 20%;  /* 20% of table width */
   border-right: 1px solid #ddd;
   background: #f0f0f0;
 }
 
 .product-column {
-  flex: 1;
-  min-width: 200px;
+  flex: 1;       /* remaining space divided equally */
   border-right: 1px solid #ddd;
+  min-width: 0;  /* allow shrinking */
 }
 
 .feature-cell,
@@ -41,28 +39,56 @@
   text-align: center;
   border-bottom: 1px solid #ddd;
   background: white;
+  word-break: break-word;
+}
+
+
+.features-column {
+  flex: 0 0 20%; /* 20% of table width */
+  border-right: 1px solid #ddd;
+  background: #f0f0f0;
+}
+
+.product-column {
+  flex: 1; /* share remaining width */
+  border-right: 1px solid #ddd;
+  min-width: 0; /* allow shrinking */
+}
+
+.feature-cell,
+.product-cell {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  background: white;
+  word-break: break-word; /* prevent overflow */
 }
 
 .header-cell {
-  background: #fff;
-  font-weight: 600;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  background: #fff;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
 }
 
 .comparison-product-image {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   border-radius: 10px;
   object-fit: cover;
+  margin-bottom: 8px;
 }
 
-.comparison-product-link {
-  text-decoration: none;
-  color: #333;
+.comparison-product-link p {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 4px 0;
 }
+
 
 .comparison-product-link:hover {
   color: #007bff;

@@ -5,12 +5,10 @@ const cloudinary = require("../config/cloudinaryConfig");
 const axios = require("axios");
 const router = express.Router();
 
-
-
 // POST /api/sell
 router.post("/", async (req, res) => {
   try {
-    const { title, description, price, state, city, categoryId, attributes, photoUrls, seller,locationMode,gpsLocation,manualLocation } = req.body;
+    const { title, description, price, state, city, categoryId, attributes, photoUrls, seller,locationMode,gpsLocation,manualLocation,verificationId, verificationStatus  } = req.body;
      if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
       return res.status(400).json({ error: "No photo URLs were provided." });
     }
@@ -65,6 +63,8 @@ const photosWithEmbeddings = await Promise.all(
       locationMode,
       gpsLocation,
       manualLocation,// store ObjectId reference
+      verificationId: verificationId ,
+      verificationStatus: verificationStatus,
     });
 
     await newProduct.save();
@@ -72,7 +72,6 @@ const photosWithEmbeddings = await Promise.all(
     res.status(201).json({
       message: "Ad posted successfully",
       product: newProduct,
-      productId: newProduct._id.toString()
     });
   } catch (err) {
     console.error("❌ Error inserting product:", err);

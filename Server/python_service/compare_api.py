@@ -4,6 +4,8 @@ from bson import ObjectId
 from sentence_transformers import SentenceTransformer, util
 import torch
 import re
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 compare_router = APIRouter()
 
 # ---------------- MongoDB Connection ----------------
@@ -56,60 +58,66 @@ def extract_features(desc: str, category_id: int = None, attributes: dict = None
     # -------------------- ELECTRONICS --------------------
     elif category_id in [201, 202, 401, 402, 403, 404, 405]:
         # Common extractions for phones, tablets, laptops, TVs, cameras, fridges, washing machines
-        if "smart tv" in desc_lower:
+        if "smart tv" in text_lower:
             features["Smart TV"] = "Yes"
-        if "wifi only" in desc_lower:
+        if "wifi only" in text_lower:
             features["WiFi Only"] = "Yes"
-        if "led" in desc_lower:
+        if "led" in text_lower:
             features["Screen Type"] = "LED"
-        if "oled" in desc_lower:
+        if "oled" in text_lower:
             features["Screen Type"] = "OLED"
-        if "4k" in desc_lower:
+        if "4k" in text_lower:
             features["Resolution"] = "4K"
-        elif "1080p" in desc_lower or "full hd" in desc_lower:
+        elif "1080p" in text_lower or "full hd" in text_lower:
             features["Resolution"] = "Full HD"
-        if "5g" in desc_lower:
+        if "5g" in text_lower:
             features["5G Support"] = "Yes"
-        if "dual sim" in desc_lower:
+        if "dual sim" in text_lower:
             features["Dual SIM"] = "Yes"
-        # Storage / RAM / Battery Health extraction from title/description
-        # Storage: matches '128 GB', '128gb', '128 storage'
-        if match := re.search(r"(\d+)\s*(gb|storage)", text_lower):
-            features["Storage"] = match.group(1) + " GB"
+        # ---------------- COLOR Extraction ----------------
+        if match := re.search(r"\b(black|white|blue|red|green|gold|silver|gray|grey|pink|yellow)\b", text_lower):
+            features["Color"] = match.group(1).capitalize()
 
-        # Battery Health: matches 'battery health 88%' or '88 Health'
-        if match := re.search(r"(?:battery\s*health[:\s]*|)(\d{1,3})\s*%?\s*health", text_lower):
-            features["Battery Health"] = match.group(1) + "%"
+        # ---------------- RAM + STORAGE Extraction (improved) ----------------
+        STORAGE_SIZES = {64, 128, 256, 512, 1024, 2048}
+        RAM_SIZES = {2, 3, 4, 6, 8, 12, 16, 32}
+
+        # Match both "8GB RAM" and "RAM 8GB", "512GB SSD" etc.
+        for m in re.finditer(r"\b(?:ram\s*)?(\d+(?:\.\d+)?)\s*(?:gb|tb)\b|\b(\d+(?:\.\d+)?)\s*(?:gb|tb)\s*ram\b", text_lower):
+            num = float(m.group(1) or m.group(2))
+            full_match = m.group(0)
+
+            if "tb" in full_match:
+                # Convert TB to GB
+                gb_value = round(num * 1024)
+                features["Storage"] = f"{gb_value} GB"
+            elif "ram" in full_match:
+                features["RAM"] = f"{int(num)} GB"
+            else:
+                # Assume storage if not explicitly RAM
+                if int(num) in STORAGE_SIZES:
+                    features["Storage"] = f"{int(num)} GB"
 
 
+            # Standalone numeric matches
+            if int(num) in STORAGE_SIZES and "Storage" not in features:
+                features["Storage"] = f"{int(num)} GB"
+            elif int(num) in RAM_SIZES and "RAM" not in features:
+                features["RAM"] = f"{int(num)} GB"
 
-        # Universal numeric patterns
-        patterns = {
-            "RAM": [r"(\d+)\s*gb\s*ram"],
-            "Battery": [r"(\d+)\s*mah"],
-            "Display Size": [r"(\d+\.?\d*)\s*(inch|inches)"],
-            "Capacity": [r"(\d+)\s*(ltrs|litres|l)"],
-        }
-
-        for feature, pats in patterns.items():
-            for p in pats:
-                if match := re.search(p, desc_lower, re.I):
-                    features[feature] = match.group(1)
-                    break
 
        # Brand extraction from title if present
         if match := re.search(
-            r"(i\s*phone|samsung|lenovo|mi|redmi|oneplus|oppo|vivo|realme|honor|huawei|nokia|motorola|google|canon|nikon|lg|whirlpool|bosch|sony)",
+            r"(i\s*phone|dell|i\s*pad|apple|acer|samsung|hp|lenovo|mi|redmi|one\s*plus|oppo|reno|vivo|realme|honor|huawei|nokia|motorola|google|canon|nikon|lg|whirlpool|bosch|sony)",
             text_lower, re.I):   # re.I makes it case-insensitive
             features["Brand"] = match.group(1).replace(" ", "").title()
 
-
         # Condition
-        if re.search(r"brand new|sealed pack|unused", desc_lower):
+        if re.search(r"brand new|sealed pack|unused|new", text_lower):
             features["Condition"] = "New"
-        elif re.search(r"used|old|good condition|second hand", desc_lower):
+        elif re.search(r"used|old|good condition|second hand", text_lower):
             features["Condition"] = "Used"
-        elif re.search(r"excellent condition|best condition", desc_lower):
+        elif re.search(r"excellent condition|best condition", text_lower):
             features["Condition"] = "Excellent"
 
         # Warranty
@@ -180,39 +188,40 @@ def extract_features(desc: str, category_id: int = None, attributes: dict = None
         features = {k: v for k, v in features.items() if v and v not in ["-", "none", "null", "n/a"]}
         return dict(list(features.items())[:6])
 
-# ---------------- Load embedding model ----------------
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-
-
-# ---------------- Compare Endpoint ----------------
 @compare_router.get("/compare/{product_id}")
-
-def compare_product(product_id: str):
+def compare_product(product_id: str, top_n: int = 4):
+    # 1️⃣ Fetch current product
     product = collection.find_one({"_id": ObjectId(product_id)})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    category_id = product.get("categoryId")
-    if not category_id:
-        raise HTTPException(status_code=400, detail="Product missing categoryId")
-
-    all_same_category = list(collection.find(
-        {"categoryId": category_id, "_id": {"$ne": ObjectId(product_id)}}
-    ))
-
-    if not all_same_category:
-        raise HTTPException(status_code=404, detail="No similar products found")
-
-    target_desc = product.get("description", "")
-    target_emb = embedding_model.encode(target_desc, convert_to_tensor=True)
-    all_descs = [p.get("description", "") for p in all_same_category]
-    all_embs = embedding_model.encode(all_descs, convert_to_tensor=True)
-    cos_scores = util.cos_sim(target_emb, all_embs)[0]
-    top_idx = torch.topk(cos_scores, k=min(3, len(all_same_category))).indices.tolist()
-    similar_products = [all_same_category[i] for i in top_idx]
-
+    
+    if "embedding" not in product:
+        raise HTTPException(status_code=400, detail="Embedding missing for this product")
+    
+    # 2️⃣ Fetch candidate products in the same category AND city
+    candidates = list(collection.find({
+        "_id": {"$ne": ObjectId(product_id)},
+        "categoryId": product["categoryId"],
+        "city": product["city"],             # ✅ enforce same city
+        "price": {"$gte": product["price"]*0.7, "$lte": product["price"]*1.3}
+    }))
+    
+    if not candidates:
+        return {"features": [], "products": []}
+    
+    # 3️⃣ Collect embeddings from DB (precomputed)
+    candidate_embeddings = np.array([c["embedding"] for c in candidates])
+    query_embedding = np.array(product["embedding"]).reshape(1, -1)
+    
+    # 4️⃣ Compute cosine similarity
+    similarities = cosine_similarity(query_embedding, candidate_embeddings)[0]
+    
+    # 5️⃣ Select top-N similar products
+    top_indices = np.argsort(similarities)[::-1][:top_n]
+    similar_products = [candidates[i] for i in top_indices]
+    
+    # 6️⃣ Build comparison table data
     all_products = [product] + similar_products
-
     extracted_data = []
     for p in all_products:
         features = extract_features(
@@ -222,38 +231,32 @@ def compare_product(product_id: str):
             title=p.get("title", "")
         )
         features["City"] = p.get("city", "N/A")
-        # Get main photo URL if available
-        main_photo = None
-        if p.get("photos") and len(p["photos"]) > 0:
-            main_photo = p["photos"][0].get("url")  # adjust if your DB uses a different structure
-
+        main_photo = p.get("photos")[0]["url"] if p.get("photos") else "/defaultBG.jpg"
         extracted_data.append({
             "title": p.get("title", "Unknown"),
             "features": features,
-            "photo": main_photo or "/defaultBG.jpg",  # fallback default image
-            "price": p.get("price", "-")  # fetch price from DB, fallback "-"
+            "photo": main_photo,
+            "price": p.get("price", "-")
         })
-
-    # Collect all feature keys
+    
+    # 7️⃣ Collect all feature keys
     all_features = sorted(set().union(*(p["features"].keys() for p in extracted_data)))
-
-    # Prepare final output
-    # Prepare final output
+    
+    # 8️⃣ Final output
     final_output = {
         "features": all_features,
         "products": [
             {
-                "_id": str(all_products[i]["_id"]),  # ✅ include product id
+                "_id": str(all_products[i]["_id"]),
                 "title": p["title"],
-                "photo": p["photo"],  # include photo
-                "price": p["price"],  # include price
+                "photo": p["photo"],
+                "price": p["price"],
                 "values": [p["features"].get(f, "-") for f in all_features]
             }
             for i, p in enumerate(extracted_data)
         ]
     }
-
-
+    
     return final_output
 
 

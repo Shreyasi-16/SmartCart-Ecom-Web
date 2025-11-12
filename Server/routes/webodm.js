@@ -339,81 +339,144 @@ router.post("/task", async (req, res) => {
 
   try {
     // write files to temp and append
-    for (const f of filesToForward) {
-      const name = f.name || f.originalname || "file";
-      const dest = path.join(TMP_DIR, safeFilename(name, "file"));
-      if (typeof f.mv === "function") await f.mv(dest);
-      else if (f.data) await fs.writeFile(dest, f.data);
-      else if (f.tempFilePath && await fs.pathExists(f.tempFilePath)) await fs.copy(f.tempFilePath, dest);
-      else continue;
+    // for (const f of filesToForward) {
+    //   const name = f.name || f.originalname || "file";
+    //   const dest = path.join(TMP_DIR, safeFilename(name, "file"));
+    //   if (typeof f.mv === "function") await f.mv(dest);
+    //   else if (f.data) await fs.writeFile(dest, f.data);
+    //   else if (f.tempFilePath && await fs.pathExists(f.tempFilePath)) await fs.copy(f.tempFilePath, dest);
+    //   else continue;
 
-      form.append("images", fs.createReadStream(dest), { filename: name });
-      tempPaths.push(dest);
-    }
+    //   form.append("images", fs.createReadStream(dest), { filename: name });
+    //   tempPaths.push(dest);
+    // }
+    const { execSync } = require("child_process");
+const sharp = require("sharp");
+
+// --- write files to temp, preprocess, and append ---
+for (const f of filesToForward) {
+  const name = f.name || f.originalname || "file";
+  const dest = path.join(TMP_DIR, safeFilename(name, "file"));
+
+  if (typeof f.mv === "function") await f.mv(dest);
+  else if (f.data) await fs.writeFile(dest, f.data);
+  else if (f.tempFilePath && await fs.pathExists(f.tempFilePath)) await fs.copy(f.tempFilePath, dest);
+  else continue;
+
+  try {
+    console.log(`[webodm] 🧠 Sending ${name} to FastAPI /api/preprocess...`);
+
+    const formPre = new FormData();
+    formPre.append("images", fs.createReadStream(dest));
+
+    const pyResp = await axios.post("http://127.0.0.1:8000/api/preprocess", formPre, {
+      headers: formPre.getHeaders(),
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 10 * 60 * 1000,
+    });
+
+    const processed = pyResp.data[0];
+    if (!processed) throw new Error("No processed data returned");
+
+    const processedPath = path.join(TMP_DIR, `proc-${name}`);
+    const maskPath = path.join(TMP_DIR, `mask-${name}`);
+    await fs.writeFile(processedPath, Buffer.from(processed.image, "base64"));
+    await fs.writeFile(maskPath, Buffer.from(processed.mask, "base64"));
+
+    form.append("images", fs.createReadStream(processedPath), { filename: name });
+    form.append("masks", fs.createReadStream(maskPath), { filename: `mask-${name}` });
+
+    tempPaths.push(processedPath, maskPath);
+    console.log(`[webodm] ✅ Preprocessed and added ${name}`);
+  } catch (err) {
+    console.warn(`[webodm] ⚠️ Preprocessing failed for ${name}: ${err.message}`);
+    form.append("images", fs.createReadStream(dest), { filename: name });
+    tempPaths.push(dest);
+  }
+}
+
 
 const token = await fetchWebODMToken();
     process.env.WEBODM_TOKEN = token;
     const webodmCreateUrl = `${WEBODM_BASE}/api/projects/${WEBODM_PROJECT_ID}/tasks/`;
 
-     // ----------------------------
-    // High-quality processing options (use WebODM / OpenDroneMap standard keys)
-    // NOTE: keys use kebab-case (as WebODM/OpenDroneMap expect).
-    // Tweak these to trade quality vs runtime / memory.
-    // ----------------------------
+   
+    
     // const highQualityOptions = {
-    //   // core reconstruction
-    //   "feature-quality": "high",                 // low|medium|high
+    //   // match manual-task attributes
+    //   "auto-boundary": true,
+    //   "dsm": true,
+
+    //   // quality / reconstruction
+    //   "feature-quality": "high",
     //   "matcher-neighbors": 8,
     //   "matcher-distance": 0.7,
     //   "depthmap-resolution": "high",
     //   "depthmap-quality": "ultra",
 
-    //   // mesh generation (increase for more detail; watch RAM)
+    //   // meshing
     //   "mesh-octree-depth": 12,
     //   "meshing-method": "poisson",
     //   "use-3dmesh": true,
 
-    //   // texturing / appearance
+    //   // texturing
     //   "texturing-nlayers": 4,
-    //   "texture-size": 4096,           // 8192 is very large; try 4096 first to avoid OOM
+    //   "texture-size": 4096,
     //   "texture-with-mask": true,
 
-    //   // reliability / calibration
+    //   // reliability
     //   "depthmap-min-consistent-views": 3,
     //   "ignore-gsd": false,
     //   "radiometric-calibration": true,
-
-    //   // engine switch if supported
     //   "use-opensfm-depthmap": true
     // };
-    const highQualityOptions = {
-      // match manual-task attributes
-      "auto-boundary": true,
-      "dsm": true,
 
-      // quality / reconstruction
-      "feature-quality": "high",
-      "matcher-neighbors": 8,
-      "matcher-distance": 0.7,
-      "depthmap-resolution": "high",
-      "depthmap-quality": "ultra",
+    // 🧱 Ultra Quality WebODM Reconstruction Settings
+const highQualityOptions = {
+  // Core reconstruction
+  "feature-quality": "ultra",
+  "matcher-neighbors": 20,
+  "matcher-distance": 0.6,
+  "use-hybrid-bundle-adjustment": true,
 
-      // meshing
-      "mesh-octree-depth": 12,
-      "meshing-method": "poisson",
-      "use-3dmesh": true,
+  // Depth map generation
+  "depthmap-resolution": "ultra",
+  "depthmap-quality": "ultra",
+  "depthmap-min-consistent-views": 3,
+  "use-opensfm-depthmap": true,
+  "opensfm-alignment-method": "naive",
 
-      // texturing
-      "texturing-nlayers": 4,
-      "texture-size": 4096,
-      "texture-with-mask": true,
+  // Mesh generation (increase geometry detail)
+  "meshing-method": "poisson",
+  "mesh-octree-depth": 14,
+  "mesh-size": 0,
+  "use-3dmesh": true,
 
-      // reliability
-      "depthmap-min-consistent-views": 3,
-      "ignore-gsd": false,
-      "radiometric-calibration": true,
-      "use-opensfm-depthmap": true
-    };
+  // Texturing (higher layers, larger textures)
+  "texturing-nlayers": 6,
+  "texturing-data-term": "gmi",
+  "texturing-outlier-removal-type": "gauss_damping",
+  "texturing-skip-global-seam-leveling": false,
+  "texturing-skip-local-seam-leveling": false,
+  "texture-size": 8192,            // 4K or 8K depending on GPU/CPU
+  "texture-with-mask": true,
+
+  // DSM/DTM optional (keep DSM true for surface)
+  "dsm": true,
+  "dtm": false,
+
+  // Radiometric and camera calibration
+  "radiometric-calibration": true,
+  "ignore-gsd": false,
+  "camera-lens-type": "brown",
+
+  // Performance tuning
+  "auto-boundary": false,
+  "force-gps": false,
+  "optimize-disk-space": false,
+};
+
 
     // Append options into form as options[key]=value (strings only)
     for (const k of Object.keys(highQualityOptions)) {
@@ -443,6 +506,8 @@ const token = await fetchWebODMToken();
     }
 
     console.log(`[webodm] → forwarding ${tempPaths.length} files to ${webodmCreateUrl} with high-quality options`);
+    console.log("[webodm] ⚙️ Running Ultra-Quality WebODM settings...");
+
 
     const resp = await axios.post(webodmCreateUrl, form, {
       headers: { ...form.getHeaders(), Authorization: `JWT ${token}` },
