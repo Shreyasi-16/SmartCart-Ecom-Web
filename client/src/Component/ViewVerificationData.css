@@ -53,3 +53,10 @@
   font-size: 0.9rem;
   color: #333;
 }
+/* make only the modal body scroll */
+.verification-modal .modal-body {
+  max-height: 70vh;          /* limits height to 70% of viewport */
+  overflow-y: auto;           /* enables vertical scroll */
+  padding-right: 1rem;        /* avoid scrollbar overlay on text */
+  scroll-behavior: smooth;    /* optional nice scrolling */
+}

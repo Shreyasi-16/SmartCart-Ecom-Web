@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import VerificationForm from "../Component/VerificationForm";
 import "./Sell.css";
 import {
   FaCar,
@@ -1272,7 +1273,9 @@ try {
         </div>
       )}
       
-    </>
+      
+          </>
+      
   );
   // Add this component in Sell.jsx (below renderPhotoGrid or near other render helpers)
 function Photo3DOptions() {

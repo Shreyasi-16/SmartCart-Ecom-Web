@@ -10,6 +10,11 @@ import EphemeralPayment from "../Component/EphemeralPayment"; // 💳 UPI Paymen
 import SimilarProducts from "../Component/SimilarProducts";
 import ComparisonTable from "../Component/ComparisonTable";
 import ViewVerificationData from "../Component/ViewVerificationData";  //verification status
+import { logEvent } from "../utils/logEvent";
+import { FaShoppingCart, FaHeart } from "react-icons/fa";
+import SellerAISummary from "../Component/SellerAISummary";
+import ReviewSection from "../Component/ReviewSection";
+const API_BASE = import.meta?.env?.VITE_API_BASE || "http://localhost:5000";
 
 const ProductPage = () => {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -22,22 +27,77 @@ const ProductPage = () => {
 
   const [chatId, setChatId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  //view verification component
+    const [showVerification, setShowVerification] = useState(false);
 
 
+     const [sellerTrust, setSellerTrust] = useState(null);
+      const [sellerTrustError, setSellerTrustError] = useState(null);
    // ✅ NEW — to auto-refresh product until 3D model is ready
   const pollRef = useRef(null);
 
+  // const fetchProduct = async () => {
+  //   try {
+  //     const res = await fetch(`http://localhost:5000/products/${productId}`);
+  //     if (!res.ok) throw new Error("Failed to fetch product details");
+  //     const data = await res.json();
+  //     setProduct(data.data ?? data);
+  //   } catch (err) {
+  //     console.error("Error fetching product details:", err);
+  //     setError(err.message);
+  //  }
+  // };
+
   const fetchProduct = async () => {
+  if (!productId) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/products/${productId}`);
+    if (!res.ok) throw new Error("Failed to fetch product details");
+
+    const json = await res.json();
+    const prod = json.data ?? json;
+    setProduct(prod);
+
+    // ✅ Set main photo if available
+    if (typeof setMainPhoto === "function") {
+      setMainPhoto(prod?.photos?.[0]?.url ?? null);
+    }
+
+    // ✅ Log product view event (if user is logged in)
     try {
-      const res = await fetch(`http://localhost:5000/products/${productId}`);
-      if (!res.ok) throw new Error("Failed to fetch product details");
-      const data = await res.json();
-      setProduct(data.data ?? data);
-    } catch (err) {
-      console.error("Error fetching product details:", err);
-      setError(err.message);
-   }
-  };
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userRes = await fetch(
+          `http://localhost:5000/api/users/getId/${currentUser.uid}`
+        );
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          const mongoIdLocal = userData._id || userData?.data?._id;
+
+          if (mongoIdLocal && prod?._id) {
+            await logEvent({
+              userId: mongoIdLocal,
+              productId: prod._id,
+              eventType: "view",
+            });
+          }
+        } else {
+          console.warn(
+            "Failed to fetch Mongo user ID:",
+            userRes.statusText || userRes.status
+          );
+        }
+      }
+    } catch (logErr) {
+      console.warn("⚠ Failed to log view event:", logErr.message);
+    }
+  } catch (err) {
+    console.error("Error fetching product details:", err);
+    setError(err.message);
+  }
+};
 
   const navigate = useNavigate();
   const { productId } = useParams();
@@ -48,8 +108,9 @@ const ProductPage = () => {
   const [sellerLoading, setSellerLoading] = useState(false);
   const [sellerError, setSellerError] = useState(null);
 
-  //view verification component
-    const [showVerification, setShowVerification] = useState(false);
+  // Hooks at top level
+    const [isInCart, setIsInCart] = useState(false);
+    const [isInWishlist, setIsInWishlist] = useState(false);
 
   // Track Firebase login
   useEffect(() => {
@@ -77,6 +138,26 @@ const ProductPage = () => {
      fetchProduct();
   return () => clearInterval(pollRef.current);
 }, [productId]);
+
+// canonical seller id used everywhere
+  const sellerMongoId = seller?._id ?? product?.sellerId ?? product?.seller ?? null;
+
+  // trust
+  useEffect(() => {
+    if (!sellerMongoId) return;
+    setSellerTrustError(null);
+    fetch(`${API_BASE}/api/sellers/${sellerMongoId}/trust`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to fetch seller trust");
+        return r.json();
+      })
+      .then((d) => setSellerTrust(d))
+      .catch((e) => {
+        console.error("trust error:", e);
+        setSellerTrustError(e.message);
+      });
+  }, [sellerMongoId]);
+
    
 
   // ✅ NEW — auto-refresh when model is processing
@@ -143,6 +224,45 @@ const ProductPage = () => {
           console.error("Error fetching similar products:", err);
         });
     }, [productId]);
+     const tempOrderId = product && mongoId ? `${product._id}_${mongoId}` : null;
+
+
+    // ✅ Fetch existing cart data and check if this product is in the cart
+      useEffect(() => {
+        if (!mongoId || !product?._id) return;
+    
+        fetch(`http://localhost:5000/api/cart/${mongoId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            const cart = Array.isArray(data) ? data : data.cart || [];
+            const exists = cart.some(
+              (item) =>
+                item.product?._id === product._id ||
+                item.productId === product._id ||
+                item.productId?._id === product._id
+            );
+            setIsInCart(exists);
+          })
+          .catch((err) => console.error("Error checking cart:", err));
+      }, [mongoId, product?._id]);
+    
+      // ✅ Fetch existing wishlist data and check if this product is in wishlist
+      useEffect(() => {
+        if (!mongoId || !product?._id) return;
+    
+        fetch(`http://localhost:5000/api/wishlist/${mongoId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            const wishlist = Array.isArray(data) ? data : data.wishlist || [];
+            const exists = wishlist.some(
+              (item) =>
+                item.productId?._id === product._id ||
+                item.productId === product._id
+            );
+            setIsInWishlist(exists);
+          })
+          .catch((err) => console.error("Error checking wishlist:", err));
+      }, [mongoId, product?._id]);
     
   const [mainPhoto, setMainPhoto] = useState(product?.photos?.[0]?.url);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -188,6 +308,86 @@ const ProductPage = () => {
     setChat({ _id: newChatId, messages: [] }); // empty chat initially
     setShowChat(true); // open ChatBox
   };
+
+   const handleAddToCart = async () => {
+      if (!firebaseUser) {
+        const confirmLogin = window.confirm(
+          "You need to log in to add to cart. Go to login page?"
+        );
+        if (confirmLogin) {
+          navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+        }
+        return;
+      }
+  
+      if (!mongoId) return;
+  
+      if (isInCart) {
+        alert("Product is already in your cart!");
+        return;
+      }
+  
+      try {
+        const res = await fetch(`http://localhost:5000/api/cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: mongoId,
+            productId: product._id,
+            quantity: 1,
+          }),
+        });
+  
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to add to cart");
+  
+        alert("Product added to cart successfully!");
+        setIsInCart(true); // update state
+        // ✅ Log cart event
+        await logEvent({ userId: mongoId, productId: product._id, eventType: "cart" });
+  
+      } catch (err) {
+        alert("Error adding product to cart: " + err.message);
+      }
+    };
+  
+    const handleAddToWishlist = async () => {
+      if (!firebaseUser) {
+        const confirmLogin = window.confirm(
+          "You need to log in to add to wishlist. Go to login page?"
+        );
+        if (confirmLogin) {
+          navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+        }
+        return;
+      }
+  
+      if (!mongoId) return;
+  
+      if (isInWishlist) {
+        alert("Product is already in your wishlist!");
+        return;
+      }
+  
+      try {
+        const res = await fetch(`http://localhost:5000/api/wishlist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: mongoId, productId: product._id }),
+        });
+  
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to add to wishlist");
+  
+        alert("Product added to wishlist successfully!");
+        setIsInWishlist(true);
+        // ✅ Log wishlist event
+        await logEvent({ userId: mongoId, productId: product._id, eventType: "wishlist" });
+  
+      } catch (err) {
+        alert("Error adding to wishlist: " + err.message);
+      }
+    };
 
   return (
     <div className="productPage-container">
@@ -236,31 +436,55 @@ const ProductPage = () => {
             <h1>{product.title}</h1>
             <p>{product.description}</p>
             <p>Price: ₹{product.price}</p>
+            {/* ✅ Show product attributes if any */}
+{product.attributes && Object.keys(product.attributes).length > 0 && (
+  <div className="attributes-section" style={{ marginTop: "10px" }}>
+    <h4>Product Details</h4>
+    <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+      {Object.entries(product.attributes).map(([key, value]) => (
+        <li key={key} style={{ marginBottom: "4px" }}>
+          <strong>{key}:</strong> {String(value)}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+  {/* Action Buttons */}
+              <div className="product-action-buttons">
+                <button className="btn add-to-cart" onClick={handleAddToCart}>
+                  <FaShoppingCart /> {isInCart ? "Added to Cart" : "Add to Cart"}
+                </button>
+                <button className="btn buy-now">Buy Now</button>
+                <button
+                  className={`btn wishlist ${isInWishlist ? "active" : ""}`}
+                  onClick={handleAddToWishlist}
+                  title={isInWishlist ? "Added to Wishlist" : "Add to Wishlist"}
+                >
+                  <FaHeart color={isInWishlist ? "red" : "gray"} />
+                </button>
+              </div>
+
              {/*product verification status*/}
               {/* Show verification only if category is not 8 */}
-            {product.categoryId !== 8 && product.categoryId !== "8" && (
-              <div>
-                <p>Product verification status:</p>
-                <button
-                  type="button"
-                  onClick={() => setShowVerification(true)}
-                  className="verify-btn"
-                >
-                  {product.verificationStatus}
-                </button>
-            
-                <ViewVerificationData
-                  isOpen={showVerification}
-                  onClose={() => setShowVerification(false)}
-                  product={product}
-                />
-              </div>
-            )}
-            <ViewVerificationData
-              isOpen={showVerification}
-              onClose={() => setShowVerification(false)}
-              product={product}
-            />
+           {product.categoryId !== 8 && product.categoryId !== "8" && (
+  <div>
+    <p>Product verification status:</p>
+    <button
+      type="button"
+      onClick={() => setShowVerification(true)}
+      className="verify-btn"
+    >
+      {product.verificationStatus}
+    </button>
+
+    <ViewVerificationData
+      isOpen={showVerification}
+      onClose={() => setShowVerification(false)}
+      product={product}
+    />
+  </div>
+)}
             {/* ✅ 3D Model Viewer Section */}
 {product.modelStatus === "none" && (
   <p>No 3D model uploaded for this product.</p>
@@ -338,6 +562,47 @@ const ProductPage = () => {
                       </p>
                       {seller.email && <p>Email: {seller.email}</p>}
                       {seller.phone && <p>Phone: {seller.phone}</p>}
+                                            {sellerTrust && sellerTrust.trustScore != null && (
+                        <div style={{ marginTop: 4, fontSize: 14 }}>
+                          <strong>Trust score:</strong> {sellerTrust.trustScore}/100{" "}
+                          <span style={{ color: "#f5a623" }}>
+                            {sellerTrust.trustStars} ★
+                          </span>
+                          <div style={{ marginTop: 4, fontSize: 12 }}>
+                            <span
+                              style={{
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                fontWeight: 600,
+                                backgroundColor:
+                                  sellerTrust.riskLevel === "LOW"
+                                    ? "#e5f7ff"
+                                    : sellerTrust.riskLevel === "MEDIUM"
+                                    ? "#eafbe5"
+                                    : "#fff7e0",
+                                color:
+                                  sellerTrust.riskLevel === "LOW"
+                                    ? "#0066b3"
+                                    : sellerTrust.riskLevel === "MEDIUM"
+                                    ? "#1b6b2a"
+                                    : "#b36b00",
+                                marginRight: 8,
+                              }}
+                            >
+                              {sellerTrust.riskLevel === "LOW" && "SmartCart's Choice"}
+                              {sellerTrust.riskLevel === "MEDIUM" && "Trusted Seller"}
+                              {sellerTrust.riskLevel === "HIGH" && "Review feedback recommended"}
+                            </span>
+                            {sellerTrust.stats.totalReviews} reviews ·{" "}
+                            {Math.round(sellerTrust.stats.fraudReviewRate * 100)}% fraud complaints
+                          </div>
+                        </div>
+                      )}
+                      {sellerTrustError && (
+                        <div style={{ fontSize: 12, color: "red", marginTop: 4 }}>
+                          {sellerTrustError}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -364,6 +629,32 @@ const ProductPage = () => {
                <div className="row ">
                  <SmartPricingAdvisor product={product} />
                </div>
+                {/* AI Summary + Reviews (raised z-index to ensure clicks land) */}
+                       <div className="row" style={{ marginTop: 16, position: "relative", zIndex: 10 }}>
+                         <SellerAISummary sellerId={sellerMongoId} />
+                         <ReviewSection
+                           sellerId={sellerMongoId}
+                           buyerId={mongoId}
+                           productId={product._id}
+                           orderId={tempOrderId}
+                           disabled={isSeller}
+                         />
+                       </div>
+               
+                       {isSeller && <p className="text-danger mt-3">You are the seller. You cannot chat.</p>}
+               
+                       {!isSeller && showChat && chat && chatId && (
+                         <ChatBox
+                           chatId={chatId}
+                           product={product}
+                           sellerId={sellerMongoId}
+                           buyerId={mongoId}
+                           currentUserId={mongoId}
+                           onClose={() => setShowChat(false)}
+                         />
+                       )}
+
+               
                     <section className="comparison-section mt-6">
                              <ComparisonTable key={product._id} productId={product._id} />
                            </section>

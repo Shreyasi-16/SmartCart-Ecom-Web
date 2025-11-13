@@ -7,13 +7,13 @@ import Product from './pages/Product.jsx';
 import AboutUs from './pages/Aboutus.jsx';
 import ProductPage from './pages/ProductPage.jsx'; 
 import SellerProfile from './pages/SellerProfile.jsx'; 
-import { Cart } from './pages/Cart.jsx';
+import Cart from './pages/Cart.jsx';
 import { Signup } from './pages/Signup.jsx';
 import { Login } from './pages/Login.jsx';
 import  Contact  from './pages/Contact.jsx';
 import  Sell  from './pages/Sell.jsx';
 import Profile from './pages/Profile.jsx'; // ✅ Corrected import
-import { Wishlist } from "./pages/Wishlist"; 
+import Wishlist from "./pages/Wishlist"; 
 import { Applayout } from './Component/Applayout.jsx';
 import './App.css';
 

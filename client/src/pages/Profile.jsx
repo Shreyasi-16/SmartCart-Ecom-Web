@@ -12,6 +12,11 @@ import ChatDashboard from "../Component/ChatDashboard";
 import PaymentProofForm from "../Component/PaymentProofForm";
 import BuyerPaymentDashboard from "../Component/BuyerPaymentDashboard";
 import axios from "axios";
+import { FaShoppingCart, FaTrash, FaMoneyBillWave } from "react-icons/fa";
+import { FiShoppingBag } from "react-icons/fi";
+import Wishlist from "./Wishlist";
+import { logEvent } from "../utils/logEvent";
+
 
 import SellerPaymentDashboard from "../Component/SellerPaymentDashboard";
 
@@ -31,7 +36,16 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("profileInfo"); // default tab
   const [sellerPayments, setSellerPayments] = useState([]);
 
-
+  const [cartItems, setCartItems] = useState([]);
+  useEffect(() => {
+      if (activeTab === "myCart" && mongoId) {
+        fetch(`http://localhost:5000/api/cart/${mongoId}`)
+          .then((res) => res.json())
+          .then((data) => setCartItems(data.cart || data))
+          .catch((err) => console.error("Failed to load cart:", err));
+      }
+    }, [activeTab, mongoId]);
+  
   //for chatboard
   const [showChatDashboard, setShowChatDashboard] = useState(false);
 
@@ -208,6 +222,25 @@ useEffect(() => {
       if (res.ok) {
         setMessage("Profile updated successfully");
          setActiveTab("profileInfo");
+         const locationData =
+                 formData.locationMode === "gps"
+               ? {
+                   mode: "gps",
+                   coordinates: formData.gpsLocation.coordinates,
+                 }
+               : {
+                   mode: "manual",
+                   city: formData.city,
+                   state: formData.state,
+                   address: formData.manualLocation.address,
+                   pincode: formData.manualLocation.pincode,
+                 };
+         
+                 await logEvent({
+                   userId: mongoId,
+                   eventType: "location_update",
+                   location: locationData,
+                 });
       
       } else {
         console.error("Failed to update profile:", data.message);
@@ -294,7 +327,28 @@ const getPaymentForProduct = (productId) => {
                   >
                     My Products
                   </button>
- 
+                  <button
+                                      className={`sidebar-btn text-start ${
+                                        activeTab === "myCart" ? "active-tab" : ""
+                                      }`}
+                                     onClick={async () => {
+                                        setActiveTab("myCart");
+                                        if (mongoId) await logEvent({ userId: mongoId, eventType: "cart" });
+                                      }}
+                                    >
+                                      My Cart
+                                    </button>
+                  <button
+                                      className={`sidebar-btn text-start ${
+                                        activeTab === "wishlist" ? "active-tab" : ""
+                                      }`}
+                                      onClick={async () => {
+                                        setActiveTab("wishlist");
+                                        if (mongoId) await logEvent({ userId: mongoId, eventType: "wishlist" });
+                                      }}
+                                    >
+                                      My Wishlist
+                                    </button>
 
                    {/*chat Dashboard for seller*/}
                   <button
@@ -425,6 +479,98 @@ const getPaymentForProduct = (productId) => {
     )}
   </div>
 )}
+
+{activeTab === "myCart" && (
+                <div className="card p-4">
+                  <h4 className="mb-3">My Cart</h4>
+
+                  {cartItems.length === 0 ? (
+                    <p>No items in your cart.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>Price</th>
+                            <th>Buy</th>
+                            <th>Remove</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cartItems.map((item) => (
+                            <tr key={item._id}>
+                              <td style={{ width: "80px" }}>
+                                <img
+                                  src={
+                                    // Handle both formats: { url: "..."} or just "..."
+                                    item.productId?.photos?.[0]?.url ||
+                                    item.productId?.photos?.[0] ||
+                                    "/defaultBG.jpg"
+                                  }
+                                  alt={item.productId?.title}
+                                  className="img-fluid rounded"
+                                  style={{
+                                    maxWidth: "70px",
+                                    maxHeight: "70px",
+                                  }}
+                                />
+                              </td>
+                              <td>{item.productId?.title}</td>
+                              <td>₹{item.productId?.price}</td>
+                              <td>
+                                <button
+                                  className="btn"
+                                  onClick={() =>
+                                    alert(`Buying ${item.productId?.title}`)
+                                  }
+                                >
+                                  <FiShoppingBag />
+                                </button>
+                              </td>
+                              <td>
+                                <button
+                                  className="btn"
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(
+                                        `http://localhost:5000/api/cart/${mongoId}/${item.productId._id}`,
+                                        { method: "DELETE" }
+                                      );
+                                      const data = await res.json();
+                                      if (!res.ok)
+                                        throw new Error(
+                                          data.message || "Failed to remove"
+                                        );
+                                      setCartItems(
+                                        cartItems.filter(
+                                          (c) =>
+                                            c.productId._id !==
+                                            item.productId._id
+                                        )
+                                      );
+                                    } catch (err) {
+                                      alert(
+                                        "Error removing item: " + err.message
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <FaTrash />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "wishlist" && <Wishlist />}
+
 {/* My Products (Seller Payment Integration) */}
            {activeTab === "myProducts" && (
   <div className="products-section">
@@ -512,12 +658,7 @@ const getPaymentForProduct = (productId) => {
              
               
 
-              {activeTab === "wishlist" && (
-                <div className="card p-4">
-                  <h4>My Wishlist</h4>
-                  <p>No items in wishlist.</p>
-                </div>
-              )}
+              
             </div>
           </div>
         ) : (

@@ -23,6 +23,17 @@ console.log("[index] pricingRoute typeof:", typeof pricingRoute);
 //for verification
 const verificationRoutes = require("./routes/verificationRoutes");
 
+const cartRoutes = require("./routes/cartRoutes");
+
+const recommendationRoutes = require("./routes/recommendationRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+
+const reviewRoutes = require("./routes/reviews");
+const reviewAIRoutes = require("./routes/reviewAI");
+const sellerTrustRoutes = require("./routes/sellerTrust")
+
+
+
 const app = express();
 
 app.use(cors());
@@ -45,9 +56,20 @@ app.use("/api/payment", paymentRoutes);
 const paymentStatusRoutes = require("./routes/paymentStatus");
 app.use("/api/paymentStatus", paymentStatusRoutes);
 //verification route call
-app.use("/api/verification", verificationRoutes);
+app.use("/api/verification", verificationRoutes);   
 
+// ✅ Cart Routes
+app.use("/api/cart", cartRoutes);
+app.use("/api/wishlist", require("./routes/wishlist"));
+app.use("/api/events", eventRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
+//review 
+app.use(express.json()); // parse application/json
+app.use(express.urlencoded({ extended: true }));
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/ai", reviewAIRoutes);
+app.use("/api/sellers", sellerTrustRoutes);
 
 app.use("/uploads", express.static("uploads")); // ✅ serve uploaded files
 const modelsRouter = require("./routes/models");
