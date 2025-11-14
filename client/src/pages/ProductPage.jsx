@@ -34,6 +34,14 @@ const ProductPage = () => {
 
   const [sellerTrust, setSellerTrust] = useState(null);
   const [sellerTrustError, setSellerTrustError] = useState(null);
+
+
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+const [soldOut, setSoldOut] = useState(false);
+const [buyerWaiting, setBuyerWaiting] = useState(false);
+
+
   // ✅ NEW — to auto-refresh product until 3D model is ready
   const pollRef = useRef(null);
 
@@ -172,10 +180,17 @@ const ProductPage = () => {
       .catch((err) => console.error("Error fetching Mongo user:", err));
   }, [firebaseUser]);
 
-  useEffect(() => {
-    fetchProduct();
-    return () => clearInterval(pollRef.current);
-  }, [productId]);
+  // Fetch product on load
+useEffect(() => {
+  fetchProduct();
+  return () => clearInterval(pollRef.current);
+}, [productId]);
+
+// Refresh payment status when user or product is ready
+useEffect(() => {
+  refreshPaymentStatus();
+}, [mongoId, product?._id]);
+
 
   // canonical seller id used everywhere
   const sellerMongoId =
@@ -196,6 +211,27 @@ const ProductPage = () => {
         setSellerTrustError(e.message);
       });
   }, [sellerMongoId]);
+
+  const refreshPaymentStatus = async () => {
+  if (!product?._id) return;
+
+  const res = await fetch("http://localhost:5000/api/paymentStatus/status",{
+
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      buyerId: mongoId,
+      productId: product._id,
+    }),
+  });
+
+  const data = await res.json();
+
+  setPaymentStatus(data.paymentStatus);
+  setSoldOut(data.soldOut);
+  setBuyerWaiting(data.paymentStatus === "buyer_confirmed");
+};
+
 
   // ✅ NEW — auto-refresh when model is processing
   useEffect(() => {
@@ -245,6 +281,25 @@ const ProductPage = () => {
       })
       .finally(() => setSellerLoading(false));
   }, [product]);
+
+  useEffect(() => {
+  if (!mongoId || !product?._id) return;
+
+  fetch(`http://localhost:5000/api/paymentStatus/hasPurchased`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      buyerId: mongoId,
+      productId: product._id
+    })
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      setHasPurchased(data.hasPurchased);
+    })
+    .catch((err) => console.error("Error checking purchase:", err));
+}, [mongoId, product?._id]);
+
 
   // Fetch similar products once main product is loaded
   useEffect(() => {
@@ -479,6 +534,27 @@ const ProductPage = () => {
             <h1>{product.title}</h1>
             <p>{product.description}</p>
             <p style={{fontWeight:'bold', fontSize:'1.1rem',marginTop:'30px'}}>Price: ₹{product.price}</p>
+            {/* Buyer has paid but seller not confirmed */}
+{buyerWaiting && (
+  <div className="alert alert-warning" style={{ marginTop: 10 }}>
+    ⏳ You have paid. Waiting for seller confirmation...
+  </div>
+)}
+
+{/* Seller confirmed (completed) */}
+{hasPurchased && !isSeller && (
+  <div className="alert alert-success" style={{ marginTop: 10 }}>
+    🎉 Congratulations! You bought this product.
+  </div>
+)}
+
+{/* Other users see SOLD OUT */}
+{soldOut && !buyerWaiting && !hasPurchased && (
+  <div className="alert alert-danger" style={{ marginTop: 10 }}>
+    ❌ This product is SOLD OUT.
+  </div>
+)}
+
 
             {/* ✅ Show product attributes if any */}
             {product.attributes &&
@@ -512,18 +588,44 @@ const ProductPage = () => {
 
             {/* Action Buttons */}
             <div className="product-action-buttons">
-              <button className="btn add-to-cart" onClick={handleAddToCart}>
-                <FaShoppingCart /> {isInCart ? "Added to Cart" : "Add to Cart"}
-              </button>
+              <button
+  className="btn add-to-cart"
+  disabled={soldOut || hasPurchased}   // ⛔ disable if sold or purchased
+  onClick={() => {
+    if (!soldOut && !hasPurchased) handleAddToCart();
+  }}
+>
+  <FaShoppingCart />
 
-              {!isSeller && (
-                <button
-                  className="btn buy-now"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  Buy Now
-                </button>
-              )}
+  {hasPurchased
+    ? "✓ Purchased"
+    : soldOut
+    ? "❌ Sold Out"
+    : isInCart
+    ? "Added to Cart"
+    : "Add to Cart"}
+</button>
+
+
+           {!isSeller && (
+  <button
+    className="btn buy-now"
+    disabled={soldOut || buyerWaiting || hasPurchased}
+    onClick={() => {
+      if (!soldOut && !buyerWaiting && !hasPurchased)
+        setShowPaymentModal(true);
+    }}
+  >
+    {soldOut
+      ? "❌ SOLD OUT"
+      : buyerWaiting
+      ? "⏳ Waiting for seller..."
+      : hasPurchased
+      ? "✔ Purchased"
+      : "Buy Now"}
+  </button>
+)}
+
               <button
                 className={`btn wishlist ${isInWishlist ? "active" : ""}`}
                 onClick={handleAddToWishlist}
@@ -861,13 +963,15 @@ const ProductPage = () => {
           </div>
 
           <div className="section-card">
-            <ReviewSection
-              sellerId={sellerMongoId}
-              buyerId={mongoId}
-              productId={product._id}
-              orderId={tempOrderId}
-              disabled={isSeller}
-            />
+           <ReviewSection
+  sellerId={sellerMongoId}
+  buyerId={mongoId}
+  productId={product._id}
+  orderId={tempOrderId}
+  disabled={!hasPurchased || isSeller} 
+  hasPurchased={hasPurchased}
+/>
+
           </div>
         </div>
 
@@ -899,6 +1003,11 @@ const ProductPage = () => {
                   />
                   <p>{p.title}</p>
                   <p>₹{p.price}</p>
+                  {/* Buyer has paid but seller not confirmed */}
+
+
+
+
                   <Link to={`/product/${p._id}`} className="view-btn">
                     View
                   </Link>
@@ -964,7 +1073,11 @@ const ProductPage = () => {
                 seller: seller?._id || product?.seller,
               }}
               buyerId={mongoId}
-              onClose={() => setShowPaymentModal(false)}
+             onClose={(paid) => {
+  setShowPaymentModal(false);
+  if (paid) refreshPaymentStatus();  // 🔥 refresh state when buyer clicks “I Paid”
+}}
+
             />
           </div>
         </div>

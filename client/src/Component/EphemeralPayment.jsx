@@ -50,10 +50,19 @@ const handleIPaid = async () => {
   }
 
   try {
-    const res = await axios.post("http://localhost:5000/api/paymentStatus/buyer-confirm", payload);
+    const res = await axios.post("http://localhost:5000/api/paymentStatus/buyer-confirm", payload)
+
+
     console.log("✅ Server response:", res.data);
     setPaymentDone(true);
+    
     setMessage("✅ Payment marked as done. Waiting for seller confirmation.");
+    
+// Close the modal after payment AND trigger parent refresh
+setTimeout(() => {
+  if (typeof onClose === "function") onClose(true); // pass true to indicate payment happened
+}, 500);
+
   } catch (err) {
     console.error("❌ Payment confirm error:", err.response?.data || err.message);
     setMessage("❌ Failed to confirm payment.");
@@ -94,6 +103,8 @@ const handleIPaid = async () => {
 
       <button
         onClick={handleGenerate}
+        disabled={paymentDone}
+
         style={{
           padding: "10px 15px",
           width: "100%",
@@ -122,8 +133,9 @@ const handleIPaid = async () => {
           </div>
 
           {!paymentDone && (
-            <button
-              onClick={handleIPaid}
+           
+              <button onClick={handleIPaid} disabled={paymentDone}
+
               style={{
                 marginTop: 15,
                 backgroundColor: "#2e7d32",
@@ -157,6 +169,23 @@ const handleIPaid = async () => {
           )}
         </div>
       )}
+      {paymentDone && (
+  <div
+    style={{
+      marginTop: 15,
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: "#fff3cd",
+      border: "1px solid #ffeeba",
+      color: "#856404",
+      textAlign: "center",
+      fontWeight: "500",
+    }}
+  >
+    ⏳ Waiting for seller confirmation…
+  </div>
+)}
+
 
       <button
         onClick={onClose}

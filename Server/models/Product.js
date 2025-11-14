@@ -45,8 +45,8 @@ const productSchema = new mongoose.Schema({
     
       verificationStatus: {
         type: String,
-        enum: ["pending", "verified", "suspect","Document Uploaded"],
-        default: "pending", // default status
+        enum: ["Pending", "Verified", "Suspect","Document Uploaded"],
+        default: "Pending", // default status
       },
   
      modelFileId: String,   // GridFS id as string

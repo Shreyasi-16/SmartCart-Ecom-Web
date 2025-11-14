@@ -4,6 +4,9 @@ import "./ReviewSection.css";
 const API_BASE = import.meta?.env?.VITE_API_BASE || "http://localhost:5000";
 
 function cleanLegacyComment(text) {
+
+ 
+
   if (!text) return "";
   let t = text;
    // Remove "Title: ...."
@@ -68,7 +71,15 @@ const SubRatingRow = ({ label, value }) =>
     </div>
   ) : null;
 
-export default function ReviewSection({ sellerId, buyerId, productId, orderId, disabled }) {
+export default function ReviewSection({
+  sellerId,
+  buyerId,
+  productId,
+  orderId,
+  disabled,
+  hasPurchased
+})
+ {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
@@ -110,8 +121,13 @@ export default function ReviewSection({ sellerId, buyerId, productId, orderId, d
   
 
   
-
-  const canWrite = !!sellerId && !!buyerId && !!productId && !!orderId && !disabled;
+const canWrite =
+  !!sellerId &&
+  !!buyerId &&
+  !!productId &&
+  !!orderId &&
+  !disabled &&
+  hasPurchased;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -172,6 +188,12 @@ export default function ReviewSection({ sellerId, buyerId, productId, orderId, d
       Write a review
     </button>
   )}
+  {!hasPurchased && (
+  <p style={{ color: "gray", marginBottom: "10px" }}>
+    You must purchase this product before leaving a review.
+  </p>
+)}
+
 </div>
 
       {showModal && (

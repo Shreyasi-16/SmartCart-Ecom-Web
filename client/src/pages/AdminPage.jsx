@@ -51,7 +51,6 @@ export default function AdminPage() {
         return <UsersCollection />;
       case "products":
         return <ProductsCollection />;
-      
       default:
         return <DashboardHome />;
     }
@@ -61,7 +60,7 @@ export default function AdminPage() {
     <div className="admin-container">
 
       {/* ---------------- SIDEBAR ---------------- */}
-      <aside className="sidebar">
+      <aside className="admin-sidebar">
         <h2 className="sidebar-title">SmartCart Admin</h2>
 
         <ul className="menu-list">

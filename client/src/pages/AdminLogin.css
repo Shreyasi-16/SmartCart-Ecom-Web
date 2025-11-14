@@ -19,7 +19,7 @@
   animation: fadeIn 0.7s ease-in-out;
 }
 
-.login-card h2 {
+.login-admin-card h2 {
   margin-bottom: 20px;
   font-size: 24px;
   font-weight: 600;
@@ -27,7 +27,7 @@
 }
 
 /* Input fields */
-.login-card input {
+.login-admin-card input {
   width: 100%;
   padding: 12px 14px;
   margin: 10px 0;
@@ -38,13 +38,13 @@
   transition: 0.3s;
 }
 
-.login-card input:focus {
+.login-admin-card input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 5px rgba(59, 130, 246, 0.4);
 }
 
 /* Button */
-.login-card button {
+.login-admin-card button {
   width: 100%;
   padding: 12px;
   margin-top: 15px;
@@ -58,7 +58,7 @@
   transition: 0.3s ease;
 }
 
-.login-card button:hover {
+.login-admin-card button:hover {
   background-color: #2563eb;
   transform: translateY(-2px);
 }
