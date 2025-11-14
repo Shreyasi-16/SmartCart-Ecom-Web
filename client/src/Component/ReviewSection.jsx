@@ -257,16 +257,7 @@ export default function ReviewSection({
                     marginBottom: 6,
                   }}
                 >
-                  <img
-                    src={r.avatar || "/defaultAvatar.png"}
-                    alt="reviewer"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      marginRight: 8,
-                    }}
-                  />
+                 
                   <div>
                     <div style={{ fontWeight: 600 }}>
                       {r.publicName || "Anonymous"}

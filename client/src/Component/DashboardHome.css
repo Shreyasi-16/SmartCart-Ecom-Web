@@ -1,0 +1,99 @@
+/* Container for the dashboard */
+.dashboard-container {
+  padding: 30px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+}
+
+/* Dashboard title */
+.dash-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+/* Cards container */
+.dash-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Individual card styling */
+.dash-card {
+  flex: 1 1 250px; /* responsive width */
+  padding: 25px;
+  border-radius: 20px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  min-height: 130px;
+  box-shadow: 0 15px 25px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+/* Hover effect */
+.dash-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 35px rgba(0,0,0,0.15);
+}
+
+/* Card content */
+.dash-card h4 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.dash-card h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.sub-text {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.sub-text.up {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Gradient background for cards */
+.card1 {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.card2 {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+}
+
+.card3 {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+
+.card4 {
+  background: linear-gradient(135deg, #f6d365, #fda085);
+}
+
+/* Optional: small icon in top-right corner */
+.dash-card::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+/* Responsive for small screens */
+@media (max-width: 768px) {
+  .dash-cards {
+    flex-direction: column;
+  }
+}

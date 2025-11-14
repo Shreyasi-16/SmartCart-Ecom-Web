@@ -133,6 +133,12 @@ const syncUserToMongo = async (user) => {
           <p className="signup-text">
             Don’t have an account? <a href="/signup">Sign Up</a>
           </p>
+
+           {/*Admin login*/}
+          <p className="signup-text">
+            Login as Admin <a href="/adminlogin">Log in</a>
+          </p>
+          
         </form>
       </div>
 

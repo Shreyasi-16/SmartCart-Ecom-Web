@@ -16,6 +16,9 @@ import Profile from './pages/Profile.jsx'; // ✅ Corrected import
 import Wishlist from "./pages/Wishlist"; 
 import { Applayout } from './Component/Applayout.jsx';
 import './App.css';
+//admin panel
+import AdminLogin from "./pages/AdminLogin.jsx";
+import AdminDashboard from "./pages/AdminPage.jsx";
 
 function App() {
   const router = createBrowserRouter([
@@ -72,7 +75,12 @@ function App() {
         },
          
       ],
+
     },
+       // === ADMIN ROUTES ===
+              { path: "/adminlogin", element: <AdminLogin /> },
+              { path: "/admindashboard", element: <AdminDashboard /> }
+    
   ]);
 
   return <RouterProvider router={router} />;

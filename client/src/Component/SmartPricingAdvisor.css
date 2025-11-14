@@ -1,91 +1,115 @@
+/* Advisor Card Container */
 .advisor-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 16px;
+  /* border: 1px solid #e5e7eb; */
+  /* border-radius: 16px; */
   
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  background-color: #fff;
-  width: 48%;
+  margin-top: 0px;
+  /* transition: all 0.3s ease; */
+  /* box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); */
+  
+  width: 100%;
+  /* display: flex; */
+  /* flex-direction: column; */
+  justify-content: space-between;
 }
 
-.advisor-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-}
 
+/* Title and Subtitle */
 .advisor-title {
   margin: 0;
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #0b1d39;
+  letter-spacing: 0.5px;
 }
 
 .advisor-subtitle {
-  font-size: 14px;
-  color: #0b1d39;
-  margin-top: 4px;
+  font-size: 0.95rem;
+  color: #374151;
+  margin-top: 6px;
 }
 
+/* Grid Section */
 .advisor-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 12px;
-  margin-top: 16px;
-  font-size: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+  font-size: 0.95rem;
   color: #0b1d39;
 }
 
+/* Button */
 .advisor-btn {
-  margin-top: 16px;
-  background: #0b1d39;
-  color: white;
+  margin-top: 20px;
+  background: linear-gradient(135deg, #0b1d39, #1e3a8a) !important;
+  color: #fff;
   border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 12px 18px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  align-self: start;
+
 }
 
 .advisor-btn:hover {
-  background: #ff6600;
+  background: linear-gradient(135deg, #ff6600, #ff8533);
+  transform: scale(1.03);
 }
 
 .advisor-btn:disabled {
-  background: #93c5fd;
+  background: #9ca3af;
   cursor: not-allowed;
+  transform: none;
 }
 
+/* Output & Info Texts */
 .advisor-error {
-  color: #b91c1c;
-  margin-top: 10px;
-  font-size: 14px;
+  color: #dc2626;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .advisor-output {
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .advisor-suggested {
-  font-size: 22px;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #0b1d39;
 }
 
 .advisor-range {
-  color: #0b1d39;
-  font-size: 14px;
-  margin-top: 4px;
+  color: #374151;
+  font-size: 0.95rem;
+  margin-top: 6px;
 }
 
-.advisor-explanation {
-  margin-top: 8px;
-  color: #0b1d39;
-  font-size: 14px;
-}
-
+.advisor-explanation,
 .advisor-details {
   margin-top: 10px;
-  font-size: 14px;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .advisor-card {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .advisor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .advisor-title {
+    font-size: 1.3rem;
+  }
 }

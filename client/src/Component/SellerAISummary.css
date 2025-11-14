@@ -1,0 +1,80 @@
+/* ===========================
+   AI Summary Card
+=========================== */
+.ai-summary-card {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-top: 18px;
+  box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.06);
+  animation: fadeIn 0.25s ease;
+}
+
+/* Header row */
+.ai-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-summary-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Refresh Button */
+.ai-refresh-btn {
+  padding: 10px 18px;
+  background: transparent;
+  border: 2px solid #0d1457;
+  color: #0d1457;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.ai-refresh-btn:hover {
+  background: #0d1457;
+  color: white;}
+
+.ai-refresh-btn:disabled {
+  background: #ddd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Text Styling */
+.ai-summary-text {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #333;
+}
+
+.ai-summary-muted {
+  color: #777;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.ai-summary-error {
+  color: red;
+  margin-top: 8px;
+}
+
+/* Optional fade animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

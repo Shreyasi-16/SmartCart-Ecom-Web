@@ -243,6 +243,71 @@ const [webodmStatus, setWebodmStatus] = useState(null); // show upload / process
   );
 };
 
+const uploadSinglePhoto = async (file, index) => {
+  // Save original File for WebODM
+  setPhotosFiles((prev) => {
+    const copy = [...prev];
+    copy[index] = file;
+    return copy;
+  });
+
+  setUploading((prev) => {
+    const copy = [...prev];
+    copy[index] = true;
+    return copy;
+  });
+
+  const data = new FormData();
+  data.append("file", file);
+  data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  data.append("cloud_name", CLOUDINARY_CLOUD_NAME);
+
+  try {
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      { method: "POST", body: data }
+    );
+    const result = await res.json();
+
+    if (result.secure_url) {
+      setPhotos((prev) => {
+        const copy = [...prev];
+        copy[index] = result.secure_url;
+        return copy;
+      });
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+  } finally {
+    setUploading((prev) => {
+      const copy = [...prev];
+      copy[index] = false;
+      return copy;
+    });
+  }
+};
+
+// multiole photos 
+// NEW: Upload multiple photos at once
+const handleMultiplePhotos = async (e) => {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+
+  let nextIndex = photos.findIndex((p) => p === null);
+  if (nextIndex === -1) {
+    alert("You cannot upload more than 40 photos.");
+    return;
+  }
+
+  for (let file of files) {
+    if (nextIndex >= 40) break;
+
+    await uploadSinglePhoto(file, nextIndex);
+    nextIndex++;
+  }
+};
+
+
   // ----------------- Validation -----------------
   const validateLocation = () => {
     if (!formData.locationMode) {
@@ -631,28 +696,66 @@ const [webodmStatus, setWebodmStatus] = useState(null); // show upload / process
 
 
   // ------------------- // Render Photo Grid // -------------------
-  const renderPhotoGrid = () => (
-    <div className="photo-grid">
-      {Array.from({ length: 20 }).map((_, index) => (
-        <label key={index} className="photo-box">
-          {uploading[index] ? (
-            <div className="loader"></div> /* Simple CSS loader */
-          ) : photos[index] ? (
-            <img src={photos[index]} alt={`upload-${index}`} />
-          ) : (
-            <span className="plus">+</span>
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handlePhotoChange(e, index)}
-            disabled={uploading[index]}
-            hidden
-          />
-        </label>
-      ))}
-    </div>
-  );
+//   const renderPhotoGrid = () => (
+//     <div className="photo-grid">
+//       {Array.from({ length: 40 }).map((_, index) => (
+//         <label key={index} className="photo-box">
+//           {uploading[index] ? (
+//             <div className="loader"></div> /* Simple CSS loader */
+//           ) : photos[index] ? (
+//             <img src={photos[index]} alt={`upload-${index}`} />
+//           ) : (
+//             <span className="plus">+</span>
+//           )}
+//           {/* <input
+//             type="file"
+//             accept="image/*"
+//             onChange={(e) => handlePhotoChange(e, index)}
+//             disabled={uploading[index]}
+//             hidden
+//           /> */}
+//           <input
+//   type="file"
+//   accept="image/*"
+//   multiple     // ✅ allow selecting many photos
+//   onChange={(e) => handleMultiplePhotos(e)}
+//   hidden
+// />
+
+//         </label>
+//       ))}
+//     </div>
+//   );
+
+const renderPhotoGrid = () => (
+  <div className="photo-grid">
+    <label className="photo-box upload-all">
+      <span className="plus">Upload Photos</span>
+      <input type="file" accept="image/*" multiple onChange={handleMultiplePhotos} hidden />
+    </label>
+
+    {Array.from({ length: 40 }).map((_, index) => (
+      <label key={index} className="photo-box">
+        {uploading[index] ? (
+          <div className="loader"></div>
+        ) : photos[index] ? (
+          <img src={photos[index]} alt={`upload-${index}`} />
+        ) : (
+          <span className="plus">+</span>
+        )}
+
+        {/* Single upload still works if user wants */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => uploadSinglePhoto(e.target.files[0], index)}
+          hidden
+        />
+      </label>
+    ))}
+  </div>
+);
+
   // ------------------- // Submit Form // -------------------
   const handleSubmit = async (e) => {
     e.preventDefault();

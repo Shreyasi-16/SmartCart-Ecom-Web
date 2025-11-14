@@ -1,0 +1,25 @@
+.collections-container {
+  padding: 20px;
+}
+
+.collections-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.collections-table th,
+.collections-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+.collections-table th {
+  background: #0f62fe;
+  color: white;
+  text-align: left;
+}
+
+.collections-table tr:nth-child(even) {
+  background: #f4f6f8;
+}

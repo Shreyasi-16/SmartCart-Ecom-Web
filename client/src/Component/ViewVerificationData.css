@@ -1,62 +1,171 @@
+/* ===== Verification Modal ===== */
 .verification-modal .modal-content {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  border: none;
-  overflow: hidden;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 10px;
+  width: 80%;
+  justify-content: center;
 }
 
+/* ===== Header ===== */
 .verification-header {
-  background: linear-gradient(90deg, #007bff, #00a3ff);
-  color: white;
+  color: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom: none;
 }
 
+.verification-header .modal-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* ===== Body ===== */
+/* Keep only the info card visible */
 .verification-content {
-  padding: 10px 5px;
-}
-
-.section-title {
-  margin-top: 20px;
-  font-weight: bold;
-  color: #007bff;
-  border-bottom: 2px solid #007bff;
-  display: inline-block;
-  margin-bottom: 10px;
-}
-
-.uploaded-files-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.uploaded-file-card {
-  text-align: center;
-  width: 120px;
-}
-
-.uploaded-file-preview {
+  background: #fff;
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  margin: auto;
   width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  max-width: 700px;
+  justify-content: center;
+}
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1e3358;
+  background: transparent !important;
+  border-bottom: none !important;
+  padding-left: 10px;
 }
 
-.uploaded-file-preview:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+
+.verification-header .modal-title {
+  color: #1e3358;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  width: fit-content;
+  margin: auto;
+  font-size: 2.2rem;
+
 }
 
-.file-name {
-  margin-top: 5px;
-  font-size: 0.9rem;
-  color: #333;
+/* ===== Horizontal Scroll for Tables ===== */
+.uploaded-table,
+.comparison-table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-radius: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #1a3d7c #f1f4f8;
 }
-/* make only the modal body scroll */
-.verification-modal .modal-body {
-  max-height: 70vh;          /* limits height to 70% of viewport */
-  overflow-y: auto;           /* enables vertical scroll */
-  padding-right: 1rem;        /* avoid scrollbar overlay on text */
-  scroll-behavior: smooth;    /* optional nice scrolling */
+
+.uploaded-table::-webkit-scrollbar,
+.comparison-table::-webkit-scrollbar {
+  height: 8px;
+}
+
+.uploaded-table::-webkit-scrollbar-thumb,
+.comparison-table::-webkit-scrollbar-thumb {
+  background-color: #1a3d7c;
+  border-radius: 10px;
+}
+
+.uploaded-table::-webkit-scrollbar-track,
+.comparison-table::-webkit-scrollbar-track {
+  background: #f1f4f8;
+  border-radius: 10px;
+}
+
+/* ===== Status Badges ===== */
+.badge {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  border-radius: 30px;
+  letter-spacing: 0.3px;
+}
+
+.badge.bg-success {
+  background-color: #28a745 !important;
+}
+
+.badge.bg-info {
+  background-color: #17a2b8 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* ===== Links ===== */
+.text-success,
+a.text-success {
+  color: #198754 !important;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a.text-success:hover {
+  text-decoration: underline;
+  color: #0f5132 !important;
+}
+
+/* ===== Loader & Empty States ===== */
+.text-center p {
+  color: #555;
+  font-weight: 500;
+}
+
+.text-muted.fs-5 {
+  color: #6c757d !important;
+}
+
+
+.modal-footer button {
+  padding: 8px 18px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+  color: #000;
+}
+
+.modal-footer button:hover {
+  transform: translateY(-2px);
+}
+
+/* ===== Verification Status Section ===== */
+#verification-status-section {
+  background: #f7faff;
+  border: 1px solid #e0e6f1;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+#verification-status-section h5 {
+  color: #1a3d7c;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Fix scroll and spacing */
+.modal-body {
+  overflow-y: auto;
+  max-height: 80vh;
+  padding: 20px 0;
 }

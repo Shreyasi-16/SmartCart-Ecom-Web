@@ -32,6 +32,13 @@ const reviewRoutes = require("./routes/reviews");
 const reviewAIRoutes = require("./routes/reviewAI");
 const sellerTrustRoutes = require("./routes/sellerTrust")
 
+//admin
+const adminRoutes = require("./routes/adminRoutes");
+//contact
+const contactRoutes = require("./routes/contactRoutes");
+//collection
+const { router: collectionRoutes, setDB: setCollectionDB } =
+  require("./routes/collectionsRoutes");
 
 
 const app = express();
@@ -77,6 +84,12 @@ app.use("/api", modelsRouter);
 
 app.use("/models", express.static(path.join(__dirname, "public", "models")));
 
+//admin panel
+app.use("/api/admin", adminRoutes);
+app.use("/contact", contactRoutes); //contact
+app.use("/api/collections", collectionRoutes);   //collection
+
+
 // webodm route
 
 const webodmRouter = require("./routes/webodm");
@@ -100,6 +113,11 @@ async function startServer() {
     const db = client.db("SmartCart");
     setCollection(db.collection("products")); 
 
+
+
+    // collections route DB
+    setCollectionDB(db);
+    
     // Connect Mongoose (for models if needed)
     await mongoose.connect(mongoUri);
     console.log("✅ Mongoose connected (for Models)");

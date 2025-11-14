@@ -129,17 +129,58 @@ useEffect(() => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedImage || !user) return;
+  // const handleUpload = async () => {
+  //   if (!selectedImage || !user) return;
+  //   try {
+  //     await updateProfile(user, {
+  //       photoURL: preview || DEFAULT_PROFILE_IMAGE,
+  //     });
+  //     setMessage("Profile image saved successfully");
+  //     setSelectedImage(null);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setMessage("Failed to update photo");
+  //   }
+  // };
+
+  //for cloudinary image url
+    const handleUpload = async () => {
+    if (!selectedImage) return;
+  
     try {
-      await updateProfile(user, {
-        photoURL: preview || DEFAULT_PROFILE_IMAGE,
+      
+      const formDataCloud = new FormData();
+      formDataCloud.append("file", selectedImage);
+      formDataCloud.append("upload_preset", "j_default"); // your unsigned preset
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/dzvfekrgb/image/upload`,
+        {
+          method: "POST",
+          body: formDataCloud,
+        }
+      );
+      const data = await res.json();
+  
+      if (!data.secure_url) throw new Error("Upload failed");
+  
+      const imageUrl = data.secure_url;
+      await updateProfile(user, { photoURL: imageUrl });
+  
+      await fetch("http://localhost:5000/api/users/updateProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: user.uid,
+          photoURL: imageUrl,
+        }),
       });
-      setMessage("Profile image saved successfully");
+  
+      setPreview(imageUrl);
       setSelectedImage(null);
+      setMessage("Profile image uploaded and saved successfully!");
     } catch (err) {
       console.error(err);
-      setMessage("Failed to update photo");
+      setMessage("Failed to upload profile image");
     }
   };
 

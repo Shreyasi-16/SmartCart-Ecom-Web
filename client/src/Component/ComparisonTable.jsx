@@ -62,18 +62,18 @@ const ComparisonTable = ({ productId }) => {
       <h2 className="comparison-title">Product Comparison</h2>
 
       <div className="comparison-table-scroll">
-        <div className="comparison-table">
+        <div className="comparison-table" style={{ display: "grid", gridAutoFlow: "column", gridAutoColumns: "220px" }}>
           {/* Feature column */}
           <div className="features-column">
             <div
               className="feature-cell header-cell"
-              style={{ minHeight: `${headerHeight}px` }}
+              style={{ minHeight: `250px` }}
 
             >
               Features
             </div>
             {features.map((feature, idx) => (
-              <div key={idx} className="feature-cell">
+              <div key={idx} className="feature-cell"style={{background:'#f3f3f4'}}>
                 {feature}
               </div>
             ))}
@@ -85,7 +85,7 @@ const ComparisonTable = ({ productId }) => {
               <div
                 ref={(el) => (productHeaderRefs.current[pIdx] = el)}
                 className="product-cell header-cell"
-                style={{ height: `${headerHeight}px` }}
+                style={{ minHeight: `250px` }}
               >
                 <img
                   src={product.photo || "/defaultBG.jpg"}
@@ -98,7 +98,7 @@ const ComparisonTable = ({ productId }) => {
                 >
                   <p>{product.title}</p>
                 </Link>
-                <p>₹{product.price}</p>
+                <p style={{color:'#22145cff'}}>₹{product.price}</p>
               </div>
 
               {/* Feature values */}
@@ -112,6 +112,10 @@ const ComparisonTable = ({ productId }) => {
         </div>
       </div>
     </div>
+    
+
+    
+    
   );
 };
 

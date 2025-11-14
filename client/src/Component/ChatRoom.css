@@ -1,132 +1,142 @@
+/* ChatRoom.css */
+
+/* Popup overlay */
 .chat-room-popup {
   position: fixed;
-  bottom: 10px;
-  right: 90px;
-  width: 360px;
-  height: 500px;
-  background: #ffffff;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  max-height: 500px;
+  background-color: #fff;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
+  font-family: "Inter", sans-serif;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
-  z-index: 1000;
-  animation: slideUp 0.3s ease;
+  z-index: 1050;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(40px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
+/* Header */
 .chat-room-header {
-  background: #075E54;
-  color: #ffffff;
+  background-color: #0b1d39;
+  color: #fff;
   padding: 12px 16px;
-  font-weight: 600;
-  font-size: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
 }
 
 .chat-room-header button {
   background: transparent;
   border: none;
-  color: #ffffff;
-  font-size: 18px;
+  color: #fff;
+  font-size: 1.2rem;
   cursor: pointer;
 }
 
-.chat-room-header button:hover {
-  color: #25D366;
-}
-
+/* Messages container */
 .chat-room-messages {
   flex: 1;
-  padding: 12px;
-  background: #ECE5DD;
+  padding: 12px 16px;
   overflow-y: auto;
+  background-color: #f8f9fc;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+/* Individual messages */
 .chat-message {
   max-width: 80%;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  border-radius: 20px;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  position: relative;
   word-wrap: break-word;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .chat-message.sent {
-  background: #DCF8C6;
-  color: #000000;
-  margin-left: auto;
+  background-color: #1a3d7c;
+  color: #fff;
+  align-self: flex-end;
   border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 20px;
 }
 
 .chat-message.received {
-  background: #FFFFFF;
-  color: #000000;
-  margin-right: auto;
+  background-color: #e7f1ff;
+  color: #0b1d39;
+  align-self: flex-start;
   border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
+/* Message timestamp */
+.message-time {
+  font-size: 0.7rem;
+  color: #6c757d;
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* Input container */
 .chat-input-container {
   display: flex;
-  padding: 8px 12px;
-  background: #f0f0f0;
-  border-top: 1px solid #ccc;
+  padding: 10px 12px;
+  background-color: #fff;
+  border-top: 1px solid #dee2e6;
+  gap: 8px;
 }
 
 .chat-input-container input {
   flex: 1;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 20px;
-  outline: none;
+  border-radius: 12px;
+  border: 1px solid #ced4da;
+  padding: 8px 12px;
   font-size: 0.95rem;
-  background: #FFFFFF;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input-container input:focus {
+  border-color: #1a3d7c;
+  box-shadow: 0 0 0 2px rgba(26, 61, 124, 0.2);
 }
 
 .chat-input-container button {
-  margin-left: 8px;
-  padding: 10px 16px;
-  background: #25D366;
-  color: #ffffff;
+  background-color: #0b1d39;
+  color: #fff;
   border: none;
-  border-radius: 50%;
+  border-radius: 12px;
+  padding: 8px 16px;
   cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: 600;
+  transition: background 0.2s ease;
 }
 
 .chat-input-container button:hover {
-  background: #128C7E;
+  background-color: #1a3d7c;
 }
 
+/* Scrollbar customization */
 .chat-room-messages::-webkit-scrollbar {
   width: 6px;
 }
 
+.chat-room-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .chat-room-messages::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.2);
+  background-color: rgba(11, 29, 57, 0.3);
   border-radius: 3px;
 }
 
-@media (max-width: 768px) {
+/* Responsive */
+@media (max-width: 400px) {
   .chat-room-popup {
-    width: 100%;
-    height: 100%;
-    bottom: 0;
-    right: 0;
-    border-radius: 0;
+    width: 90%;
+    right: 5%;
   }
 }

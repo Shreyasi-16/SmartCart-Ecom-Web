@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-
+import "./SmartPricingAdvisor.css";
 const PRICER_URL = "http://localhost:5000/api/pricing/advise";
 
 export default function SmartPricingAdvisor({ product }) {
@@ -18,7 +18,6 @@ export default function SmartPricingAdvisor({ product }) {
   const state = product?.state || "";
   const priceRaw = product?.price;
 
-  // Coerce numerics when possible
   const year =
     typeof yearRaw === "number"
       ? yearRaw
@@ -33,7 +32,6 @@ export default function SmartPricingAdvisor({ product }) {
       ? Number(priceRaw)
       : undefined;
 
-  // Category ID (try numeric, fall back to string)
   const categoryIdRaw =
     product?.categoryId ?? product?.sub_category_id ?? product?.sub_category;
   const categoryId = Number.isFinite(Number(categoryIdRaw))
@@ -53,17 +51,15 @@ export default function SmartPricingAdvisor({ product }) {
     setErr(null);
     setOut(null);
     try {
-      // Build a clean payload (omit empty/undefined)
       const body = {
         brand: brand || undefined,
         model: model || undefined,
-        year, // already undefined if invalid
+        year,
         condition: condition || undefined,
         city: city || undefined,
         state: state || undefined,
-        categoryId, // numeric if possible
-        price, // numeric if possible
-        // Optional helper text – server currently ignores it, but OK to send
+        categoryId,
+        price,
         queryText: [
           product?.categoryName || product?.sub_category || "",
           brand && `brand:${brand}`,
@@ -88,12 +84,7 @@ export default function SmartPricingAdvisor({ product }) {
       const ct = res.headers.get("content-type") || "";
       if (!ct.includes("application/json")) {
         const text = await res.text();
-        throw new Error(
-          `Non-JSON from server (${res.status}). First bytes: ${text.slice(
-            0,
-            120
-          )}`
-        );
+        throw new Error(`Non-JSON from server (${res.status}).`);
       }
 
       const data = await res.json();
@@ -107,78 +98,52 @@ export default function SmartPricingAdvisor({ product }) {
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 12,
-        padding: 16,
-        marginTop: 16,
-      }}
-    >
-      <h3 style={{ margin: 0 }}>Smart Pricing Advisor</h3>
-      <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
+    <div className="advisor-card">
+      <h3 className="advisor-title">Smart Pricing Advisor</h3>
+      <p className="advisor-subtitle">
         Using similar listings near you to suggest a fair price.
+      </p>
+
+      <div className="advisor-grid">
+        <div><strong>Brand:</strong> {brand || "—"}</div>
+        <div><strong>Model:</strong> {model || "—"}</div>
+        <div><strong>Year:</strong> {year ?? "—"}</div>
+        <div><strong>Condition:</strong> {condition || "—"}</div>
+        <div><strong>City:</strong> {city || state || "—"}</div>
+        <div><strong>Asking Price:</strong> {price != null ? `₹${price}` : "—"}</div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-          gap: 8,
-          marginTop: 12,
-        }}
+      <button
+        className="advisor-btn"
+        onClick={getPrice}
+        disabled={loading}
       >
-        <div>
-          <strong>Brand</strong>: {brand || "—"}
-        </div>
-        <div>
-          <strong>Model</strong>: {model || "—"}
-        </div>
-        <div>
-          <strong>Year</strong>: {year ?? "—"}
-        </div>
-        <div>
-          <strong>Condition</strong>: {condition || "—"}
-        </div>
-        <div>
-          <strong>City</strong>: {city || state || "—"}
-        </div>
-        <div>
-          <strong>Asking Price</strong>: {price != null ? `₹${price}` : "—"}
-        </div>
-      </div>
-
-      <button onClick={getPrice} disabled={loading} style={{ marginTop: 12 }}>
         {loading ? "Analyzing…" : "Get Suggested Price"}
       </button>
 
-      {err && (
-        <div style={{ color: "#b91c1c", marginTop: 10 }}>Error: {err}</div>
-      )}
+      {err && <div className="advisor-error">Error: {err}</div>}
 
       {out && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>
+        <div className="advisor-output">
+          <div className="advisor-suggested">
             Suggested: ₹{out.suggested?.toLocaleString?.() ?? "—"}
           </div>
 
           {out.range && (
-            <div style={{ color: "#374151" }}>
+            <div className="advisor-range">
               Typical range: ₹{out.range.low?.toLocaleString?.()} – ₹
               {out.range.high?.toLocaleString?.()}
             </div>
           )}
 
           {out.explanation && (
-            <p style={{ marginTop: 8, color: "#374151" }}>
-              {out.explanation}
-            </p>
+            <p className="advisor-explanation">{out.explanation}</p>
           )}
 
-          {!!(out.comps?.length) && (
-            <details style={{ marginTop: 6 }}>
+          {/* {!!(out.comps?.length) && (
+            <details className="advisor-comps">
               <summary>Top comparable listings</summary>
-              <ul style={{ marginTop: 6 }}>
+              <ul>
                 {out.comps.slice(0, 5).map((c) => (
                   <li key={c._id}>
                     ₹{c.price?.toLocaleString?.() ?? "—"} — {c.title ?? "—"}{" "}
@@ -190,7 +155,7 @@ export default function SmartPricingAdvisor({ product }) {
                 ))}
               </ul>
             </details>
-          )}
+          )} */}
         </div>
       )}
     </div>

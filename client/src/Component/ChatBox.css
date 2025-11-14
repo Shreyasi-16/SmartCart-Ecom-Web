@@ -26,7 +26,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  background: #075E54; /* WhatsApp dark green */
+  background: #0b1d39; /* WhatsApp dark green */
   color: #fff;
   font-weight: bold;
   border-top-left-radius: 5px;
@@ -52,7 +52,7 @@
 }
 
 .chat-message.sent {
-  background-color: #dcf8c6; /* WhatsApp light green */
+  background-color: #86a6b6; /* WhatsApp light green */
   color: #000;
   align-self: flex-end;
   text-align: right;
@@ -94,7 +94,7 @@
   margin-left: 5px;
   padding: 6px 12px;
   border: none;
-  background: #25D366; /* WhatsApp green button */
+  background: #ff6600; /* WhatsApp green button */
   color: #fff;
   border-radius: 20px;
   cursor: pointer;
@@ -102,7 +102,7 @@
 }
 
 .chatbox-input button:hover {
-  background: #1da851; /* Darker green on hover */
+  background: #f2711c; /* Darker green on hover */
 }
 
   height: 400px;
@@ -115,7 +115,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  background: #007bff;
+  background: #afd0f3;
   color: #fff;
   font-weight: bold;
   border-top-left-radius: 5px;
@@ -126,7 +126,7 @@
   flex: 1;
   padding: 10px;
   overflow-y: auto;
-  background: #f7f7f7;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
 }
@@ -141,14 +141,14 @@
 }
 
 .chat-message.sent {
-  background-color: #007bff;
+  background-color: #224060;
   color: #fff;
   align-self: flex-end;
   text-align: right;
 }
 
 .chat-message.received {
-  background-color: #e5e5e5;
+  background-color: #c9c0c0;
   color: #000;
   align-self: flex-start;
   text-align: left;
@@ -182,7 +182,7 @@
   margin-left: 5px;
   padding: 6px 12px;
   border: none;
-  background: #007bff;
+  background: #0f2741;
   color: #fff;
   border-radius: 20px;
   cursor: pointer;
@@ -190,5 +190,5 @@
 }
 
 .chatbox-input button:hover {
-  background: #0056b3;
+  background: #2b3f54;
 }

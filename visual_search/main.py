@@ -8,7 +8,9 @@ import io
 import torch
 import clip  # OpenAI CLIP
 import sys,os
+
 from preprocess_api import router as preprocess_router
+
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # project-root
@@ -72,7 +74,10 @@ def get_embedding(data: ImageUrl):
 app.include_router(products_router)  # ✅ from products.py
 app.include_router(compare_router)                     # ✅ from compare_api.py
 app.include_router(preprocess_router)
+
+
 app.include_router(ocr_router)        #  Mount OCR routes
+
 
 
 # -----------------------------------------------------------------------------

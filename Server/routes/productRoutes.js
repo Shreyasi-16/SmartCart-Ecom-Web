@@ -1,11 +1,106 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
 const uploadToCloudinary = require("../config/cloudinary");
+const Product = require("../models/Product");   // ✅ REQUIRED
 const fileUpload = require("express-fileupload");
 const router = express.Router();
 let productsCollection;
 
 router.use(fileUpload());
+
+router.get("/stats", async (req, res) => {
+  try {
+    const totalCount = await Product.countDocuments();
+
+    // ---- Category-wise product count
+    const byCategory = await Product.aggregate([
+      {
+        $addFields: {
+          categoryIds: {
+            $cond: [
+              { $isArray: "$categoryId" },
+              "$categoryId",
+              { $split: [{ $toString: "$categoryId" }, ","] } // handle comma-separated
+            ]
+          }
+        }
+      },
+      { $unwind: "$categoryIds" }, // flatten array for grouping
+      {
+        $group: {
+          _id: "$categoryIds",
+          total: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // ---- Category name mapping
+    const categoryMap = {
+      1: "Cars",
+      3: "Bikes",
+      8: "Pets",
+      5: "Furniture & Decor",
+      201: "Mobile Phones",
+      202: "Tablets",
+      401: "TVs, Video & Audio",
+      402: "Computers & Laptops",
+      403: "Cameras & Lenses",
+      404: "Fridges",
+      406: "Washing Machines",
+      601: "Women Clothing",
+      602: "Women Accessories",
+      603: "Men Clothing",
+      604: "Men Accessories",
+      605: "Kids Clothing",
+      606: "Kids Accessories",
+      701: "Books",
+      702: "Sports",
+      703: "Hobbies",
+    };
+
+    // ---- Format with category names
+    const formattedByCategory = byCategory.map(c => ({
+      categoryId: c._id,
+      category: categoryMap[c._id] || `Category ${c._id}`,
+      total: c.total
+    }));
+
+    // ---- Sort by categoryId numerically
+    formattedByCategory.sort((a, b) => Number(a.categoryId) - Number(b.categoryId));
+
+    // ---- State-wise product count
+    const byState = await Product.aggregate([
+      { $group: { _id: "$state", total: { $sum: 1 } } },
+    ]);
+
+    // ---- Verification status
+    const byVerificationStatus = await Product.aggregate([
+      { $group: { _id: "$verificationStatus", total: { $sum: 1 } } },
+    ]);
+
+    // ---- Repeated sellers
+    const repeatedSellers = await Product.aggregate([
+      { $group: { _id: "$seller", count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $count: "repeated" },
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalCount,
+        byCategory: formattedByCategory,
+        byState,
+        byVerificationStatus,
+        repeatedSellers: repeatedSellers[0]?.repeated || 0,
+      },
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Error fetching stats" });
+  }
+});
 
 function setCollection(collection) {
   productsCollection = collection;

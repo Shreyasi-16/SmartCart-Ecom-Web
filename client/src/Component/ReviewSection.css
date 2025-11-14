@@ -1,0 +1,232 @@
+/* Allow background scrolling when modal is open (safe behaviour) */
+body.modal-open { overflow: auto !important; position: static !important; }
+/* DARK BACKDROP */
+.review-modal-overlay {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 50px 12px;
+  z-index: 9999;
+  animation: fadeBackdrop 0.25s ease-out;
+}
+
+/* POPUP CARD */
+.review-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  padding: 25px 26px;
+  border-radius: 14px;
+  box-shadow: 0px 8px 40px rgba(0, 0, 0, 0.25);
+  animation: popupShow 0.28s ease-out;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px; /* spacing below header */
+  gap: 20px; /* spacing between title and button */
+}
+
+.review-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* FORM STYLE */
+.review-form label {
+  font-weight: 600;
+  margin-top: 12px;
+  display: block;
+  font-size: 14px;
+}
+
+.review-form input,
+.review-form textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d1d1;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.review-form input:focus,
+.review-form textarea:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+}
+
+.review-form textarea {
+  resize: none;
+}
+
+/* STAR INPUT (CORRECTED — FIXES OVERRIDE ISSUES) */
+.star-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.star-input button {
+  all: unset; /* avoids other styles interfering */
+  cursor: pointer;
+  font-size: 24px;
+  color: #bbb;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.star-input button.filled {
+  color: #ffb300 !important; /* stronger to avoid blur/backdrop overriding */
+}
+
+.star-input button:hover,
+.star-input button:hover ~ button {
+  color: #ff8f00 !important;
+}
+
+/* BUTTON ROW */
+.review-btn-row,
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.review-cancel-btn,
+.cancel-btn {
+  padding: 8px 16px;
+  background: #f1f1f1;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.review-cancel-btn:hover,
+.cancel-btn:hover {
+  background: #e2e2e2;
+}
+
+.review-submit-btn,
+.submit-btn {
+  padding: 8px 18px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: 100px;
+}
+
+.review-submit-btn:hover,
+.submit-btn:hover {
+  background: #000;
+  transform: scale(1.03);
+}
+
+.review-submit-btn:disabled,
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* WRITE REVIEW BUTTON */
+.write-review-btn {
+  padding: 10px 18px;
+  background: transparent;
+  border: 2px solid #0d1457;
+  color: #0d1457;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.write-review-btn:hover:not(:disabled) {
+  background: #0d1457;
+  color: white;
+}
+
+.write-review-btn:disabled {
+  border-color: #ccc;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+
+/* INLINE FORM CARD (if used) */
+.review-card-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  flex-direction: column;
+}
+
+.review-card-box {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  padding: 22px 24px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Error + Success Messages */
+.error-msg {
+  color: #d00000;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.success-msg {
+  color: #1b9400;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+/* ANIMATIONS */
+@keyframes popupShow {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
