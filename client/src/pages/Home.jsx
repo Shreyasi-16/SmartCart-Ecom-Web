@@ -5,6 +5,7 @@ import axios from "axios";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useLocation } from "react-router-dom";
 
+import { FaHeart, FaShoppingCart, FaEye } from "react-icons/fa";
 import {
   FaTshirt,
   FaLaptop,
@@ -31,27 +32,110 @@ export function Home() {
   const { product } = location.state || {};
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
-// useEffect(() => {
-//   if (!mongoId) return;
-//   const fetchRecentlyViewed = async () => {
-//     try {
-      
-//       const res = await axios.get("http://127.0.0.1:5000/api/recommendations", {
-//   params: { userId: mongoId },
-//   timeout: 8000,
-// });
+  const [hoverId, setHoverId] = useState(null);
+  const [productPhotosMap, setProductPhotosMap] = useState({});
 
-//       setRecentlyViewed(res.data.products || []);
-//     } catch (err) {
-//       console.error("❌ Error fetching recently viewed:", err);
-//     }
-//   };
-//   fetchRecentlyViewed();
-// }, [mongoId]);
+  // CART + WISHLIST STATES
+const [cartItems, setCartItems] = useState([]);
+const [wishlistItems, setWishlistItems] = useState([]);
+// FETCH CART ITEMS
+useEffect(() => {
+  if (!mongoId) return;
+
+  fetch(`http://localhost:5000/api/cart/${mongoId}`)
+    .then(res => res.json())
+    .then(data => {
+      const ids = (data.cart || data).map(
+        (item) => item.productId?._id || item.productId
+      );
+      setCartItems(ids);
+    })
+    .catch(console.error);
+}, [mongoId]);
+
+// FETCH WISHLIST ITEMS
+useEffect(() => {
+  if (!mongoId) return;
+
+  fetch(`http://localhost:5000/api/wishlist/${mongoId}`)
+    .then(res => res.json())
+    .then(data => {
+      const ids = (data.wishlist || []).map(
+        (item) => item.productId?._id || item.productId
+      );
+      setWishlistItems(ids);
+    });
+}, [mongoId]);
+// ADD TO CART
+const handleAddToCart = async (productId, e) => {
+  e.stopPropagation();
+  if (!mongoId) return alert("Login to use cart");
+
+  if (cartItems.includes(productId)) return alert("Already in cart!");
+
+  try {
+    await fetch(`http://localhost:5000/api/cart`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: mongoId, productId, quantity: 1 }),
+    });
+
+    setCartItems((prev) => [...prev, productId]);
+    alert("Added to cart!");
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+};
+
+// ADD / REMOVE WISHLIST
+const handleToggleWishlist = async (productId, e) => {
+  e.stopPropagation();
+  if (!mongoId) return alert("Login to use wishlist");
+
+  const exists = wishlistItems.includes(productId);
+
+  try {
+    await fetch(
+      exists
+        ? `http://localhost:5000/api/wishlist/${mongoId}/${productId}`
+        : `http://localhost:5000/api/wishlist`,
+      {
+        method: exists ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: exists ? null : JSON.stringify({ userId: mongoId, productId }),
+      }
+    );
+
+    setWishlistItems((prev) =>
+      exists ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+
+    alert(exists ? "Removed from wishlist" : "Added to wishlist");
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+};
 
 
+  // useEffect(() => {
+  //   if (!mongoId) return;
+  //   const fetchRecentlyViewed = async () => {
+  //     try {
 
-   // ✅ Detect logged-in user
+  //       const res = await axios.get("http://127.0.0.1:5000/api/recommendations", {
+  //   params: { userId: mongoId },
+  //   timeout: 8000,
+  // });
+
+  //       setRecentlyViewed(res.data.products || []);
+  //     } catch (err) {
+  //       console.error("❌ Error fetching recently viewed:", err);
+  //     }
+  //   };
+  //   fetchRecentlyViewed();
+  // }, [mongoId]);
+
+  // ✅ Detect logged-in user
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -61,52 +145,56 @@ export function Home() {
     return () => unsubscribe();
   }, []);
 
-
   // ✅ Fetch MongoDB user ID
-useEffect(() => {
-  if (!userId) return;
-  fetch(`http://localhost:5000/api/users/getId/${userId}`)
-    .then((res) => res.json())
-    .then((data) => setMongoId(data._id || data?.data?._id))
-    .catch((err) => console.error("Error fetching Mongo user ID:", err));
-}, [userId]);
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`http://localhost:5000/api/users/getId/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setMongoId(data._id || data?.data?._id))
+      .catch((err) => console.error("Error fetching Mongo user ID:", err));
+  }, [userId]);
 
-useEffect(() => {
-  console.log("Firebase UID:", userId);
-}, [userId]);
+  useEffect(() => {
+    console.log("Firebase UID:", userId);
+  }, [userId]);
 
-useEffect(() => {
-  console.log("Mongo ID:", mongoId);
-}, [mongoId]);
-
-
+  useEffect(() => {
+    console.log("Mongo ID:", mongoId);
+  }, [mongoId]);
 
   // ✅ Fetch recommendations from backend (cached from MongoDB)
-useEffect(() => {
-  if (!mongoId) return;
-  const fetchRecommendations = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/recommendations", {
-        params: { userId: mongoId },
-      });
-      setRecommendations(res.data.recommendations || []);
-    } catch (err) {
-      console.error("❌ Error fetching recommendations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!mongoId) return;
+    const fetchRecommendations = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/recommendations",
+          {
+            params: { userId: mongoId },
+          }
+        );
+        setRecommendations(res.data.recommendations || []);
+        // Extract photos for each product
+        const photoMap = {};
+        (res.data.recommendations || []).forEach((prod) => {
+          photoMap[prod._id] = prod.photos?.map((p) => p.url) || [];
+        });
 
-  // Fetch instantly
-  fetchRecommendations();
+        setProductPhotosMap(photoMap);
+      } catch (err) {
+        console.error("❌ Error fetching recommendations:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Optional: Auto-refresh every 1 minute (keeps fresh)
-  const interval = setInterval(fetchRecommendations, 60000);
-  return () => clearInterval(interval);
-}, [mongoId]);
+    // Fetch instantly
+    fetchRecommendations();
 
-
-
+    // Optional: Auto-refresh every 1 minute (keeps fresh)
+    const interval = setInterval(fetchRecommendations, 60000);
+    return () => clearInterval(interval);
+  }, [mongoId]);
 
   const categories = [
     { name: "Women Clothing", icon: <FaTshirt size={40} />, color: "#ff6b35" },
@@ -114,7 +202,11 @@ useEffect(() => {
     { name: "Furniture", icon: <FaCouch size={40} />, color: "#10b981" },
     { name: "Books", icon: <FaBook size={40} />, color: "#f59e0b" },
     { name: "Mobiles", icon: <FaMobileAlt size={40} />, color: "#2563eb" },
-    { name: "Women Accessories", icon: <FaShoePrints size={40} />, color: "#dc2626" },
+    {
+      name: "Women Accessories",
+      icon: <FaShoePrints size={40} />,
+      color: "#dc2626",
+    },
     { name: "Cars", icon: <FaCar size={40} />, color: "#f97316" },
     { name: "Bikes", icon: <FaBicycle size={40} />, color: "#8b5cf6" },
     { name: "Pets", icon: <FaPaw size={40} />, color: "#ec4899" },
@@ -146,9 +238,8 @@ useEffect(() => {
         </div>
       </section>
 
-      
       {/* Recently Viewed Section */}
-{/* <section className="featured-products">
+      {/* <section className="featured-products">
   <h2 className="section-title">Recently Viewed</h2>
   <div className="products-grid">
     {recentlyViewed.length === 0 ? (
@@ -178,54 +269,91 @@ useEffect(() => {
   </div>
 </section> */}
 
-
-        {/* Personalized Recommendations */}
       {/* Personalized Recommendations */}
-{mongoId && (
-  <section className="recommendation-section">
-    <h2 className="section-title">Recommended For You</h2>
-    {loading ? (
-      <p>Loading personalized recommendations...</p>
-    ) : recommendations.length === 0 ? (
-      <p>No recommendations available yet.</p>
-    ) : (
-      <div className="recommendation-grid">
-        {recommendations.map((product) => (
-          <div 
-          key={product._id} 
-          className="recommend-card" 
-          onClick={() => navigate(`/product/${product._id}`, { state: { product } })}
-          >
-            <div className="image-container">
-              <img
-                src={
-                  product.thumbnail ||
-                  product.photos?.[0]?.url ||
-                  "https://via.placeholder.com/300x300?text=No+Image"
-                }
-                alt={product.title}
-                className="recommend-image"
-              />
-              <div className="overlay">
-                <h3 className="overlay-title">{product.title}</h3>
-                <p className="overlay-price">₹{product.price}</p>
-                <div className="overlay-actions">
-                  <button className="overlay-btn cart-btn">
-                    <i className="fas fa-shopping-cart"></i>
-                  </button>
-                  <button className="overlay-btn wishlist-btn">
-                    <i className="fas fa-heart"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </section>
-)}
+      {/* Personalized Recommendations */}
+      {mongoId && (
+        <div className="recommend-card-wrapper">
+          <section className="recommendation-section">
+            <h2 className="recommend-section-title">Recommended For You</h2>
+            {loading ? (
+              <p>Loading personalized recommendations...</p>
+            ) : recommendations.length === 0 ? (
+              <p>No recommendations available yet.</p>
+            ) : (
+              <div className="recommendation-grid">
+                {recommendations.map((product) => (
+                  <div
+                    className="recommend-card"
+                    onMouseEnter={() => setHoverId(product._id)}
+                    onMouseLeave={() => setHoverId(null)}
+                    
+                  >
+                    <div className="recommend-img-wrapper">
+                      {(() => {
+                        const photos = productPhotosMap[product._id] || [];
+                        const mainImg = photos[0] || product.thumbnail;
+                        const hoverImg = photos[1] || mainImg;
+                        return (
+                          <img
+                            src={hoverId === product._id ? hoverImg : mainImg}
+                            alt={product.title}
+                            className="recommend-img"
+                          />
+                        );
+                      })()}
+                    </div>
 
+                    <div className="recommend-info">
+                      <div className="info-text">
+                        <h3 className="recommend-title">{product.title}</h3>
+                        <p className="recommend-price">₹{product.price}</p>
+                      </div>
+
+                      <div className="recommend-icons-static">
+                        <div className="recommend-icons-static">
+
+  {/* Add to Cart */}
+  <button
+    className="icon-btn-static"
+    onClick={(e) => handleAddToCart(product._id, e)}
+  >
+    <FaShoppingCart
+      color={cartItems.includes(product._id) ? "#ff6600" : ""}
+    />
+  </button>
+
+  {/* Wishlist */}
+  <button
+    className="icon-btn-static"
+    onClick={(e) => handleToggleWishlist(product._id, e)}
+  >
+    <FaHeart
+      color={wishlistItems.includes(product._id) ? "#ff6600" : ""}
+    />
+  </button>
+
+  {/* VIEW */}
+  <button
+    className="icon-btn-static"
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/product/${product._id}`);
+    }}
+  >
+    <FaEye />
+  </button>
+
+</div>
+
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

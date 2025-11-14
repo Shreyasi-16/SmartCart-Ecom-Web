@@ -11,6 +11,8 @@ import { getAuth, signOut, onAuthStateChanged } from "firebase/auth"; // ⬅️ 
 import app from "../firebase";
 import "./Header.css";
 import DropDownMenu from "./DropDownMenu";
+import { logEvent } from "../utils/logEvent";
+
 
 const auth = getAuth(app);
 
@@ -98,6 +100,18 @@ export function Header() {
   //   }
   // };
 
+  const [mongoId, setMongoId] = useState(null);
+
+// 🧠 Get MongoDB user ID when Firebase user changes
+useEffect(() => {
+  if (!user?.uid) return;
+  fetch(`http://localhost:5000/api/users/getId/${user.uid}`)
+    .then((res) => res.json())
+    .then((data) => setMongoId(data._id || data?.data?._id))
+    .catch((err) => console.error("Failed to get Mongo user:", err));
+}, [user]);
+
+
   // ------------------- AUTH -------------------
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -143,6 +157,14 @@ export function Header() {
             );
             setResults(textualNormalized);
             setHighlightIndex(0);
+            if (mongoId && query.trim().length > 1) {
+              logEvent({
+                userId: mongoId,
+                eventType: "search",
+                searchQuery: query.trim(),
+              });
+            }
+
           })
           .catch((err) => console.error("Error fetching data:", err));
       } else {
@@ -322,6 +344,14 @@ export function Header() {
         new Map(normalized.map((item) => [item._id, item])).values()
       );
       setResults(deduped);
+      if (mongoId) {
+        logEvent({
+          userId: mongoId,
+          eventType: "search",
+          searchQuery: "visual-search",
+        });
+      }
+
       setHighlightIndex(0);
       setInputValue(deduped[0]?.title || "");
       setIsActiveSearch(true); // show dropdown
