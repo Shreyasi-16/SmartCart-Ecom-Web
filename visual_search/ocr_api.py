@@ -45,7 +45,7 @@ def extract_aadhar_details(text):
     return data
 
 
-def extract_rcbook_details(text):
+"""def extract_rcbook_details(text):
     text = text.lower()
     data = {}
     def find_field(pattern, multiline=False):
@@ -61,23 +61,69 @@ def extract_rcbook_details(text):
     data["reg_validity"] = find_field(r"reg\.\s*validity\s*([\d/]+)")
     data["chassis_no"] = find_field(r"chassis\s*no\.\s*([a-z0-9]+)")
     data["engine_no"] = find_field(r"engine\s*no\.\s*([a-z0-9]+)")
-    data["vehicle_class"] = find_field(r"vehicle\s*class\s*([^\n]+)", multiline=True)
-    data["owner_name"] = find_field(r"owner\s*name\s*([^\n]+)", multiline=True)
     final_data = {k: v for k, v in data.items() if v is not None}
     if not final_data:
         return {"error": "Could not extract any data. Check OCR text quality."}
-    return final_data
+    return final_data        for given rc book create re to extract given field in code"""
+
+def extract_rcbook_details(text):
+    text = text.lower()
+    data = {}
+
+    def find(pattern):
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).strip()
+        return None
+
+    # Corrected patterns for your RC card format
+    data["reg_no"] = find(
+    r"([a-z]{2}\d{2}[a-z]{2}\d{4})"
+    )
+
+    # --- DATE OF REGN ---
+    data["reg_date"] = find(r"[:\-]?\s*(\d{2}[-/]\d{2}[-/]\d{4})")
+
+    # --- REGN VALIDITY ---
+    reg_date_raw = data.get("reg_date")
+    if reg_date_raw:
+        from datetime import datetime, timedelta
+
+    # convert 06/04/2023 → 06-04-2023
+        reg_date_norm = reg_date_raw.replace("/", "-")
+
+        try:
+            dt = datetime.strptime(reg_date_norm, "%d-%m-%Y")
+        # RC validity rule = +15 years - 1 day
+            validity_dt = dt.replace(year=dt.year + 15) - timedelta(days=1)
+            data["reg_validity"] = validity_dt.strftime("%d-%m-%Y")
+        except:
+            data["reg_validity"] = None
+    
+    data["chassis_no"] = find(r"\b([A-HJ-NPR-Z0-9]{17})\b")
+
+
+    # Engine or Motor number (OCR sometimes drops 'engine')
+    data["engine_no"] = find(r"(?:engine|Motor)\s*no\.?\s*([a-z0-9]+)")
+
+
+    # Clean output
+    cleaned = {k: v.upper() for k, v in data.items() if v}
+
+    return cleaned if cleaned else {"error": "No fields extracted"}
 
 
 def _clean_policy(s):
-    return re.sub(r"[^0-9/]", "", s or "").strip()
+    # This allows only alphanumeric characters and slashes, dashes (if needed).
+    return re.sub(r"[^0-9A-Za-z/-]", "", s or "").strip()
 
 
 def _first_match(patterns, text, flags=0):
     for p in patterns:
         m = re.search(p, text, flags)
         if m:
-            return m.group(1).strip()
+            # Clean the matched group before returning it
+            return _clean_policy(m.group(1).strip())
     return None
 
 
@@ -90,7 +136,10 @@ def extract_insurance_details(text):
         r"policy\s*(?:no|number)\s*[:\-]?\s*([0-9/ \-]{8,})",
         r"\b([0-9]{3,4}\/[0-9]{6,}\/[0-9]{1,3}\/[0-9]{1,4})\b",
         r"\b([0-9]{3,}\/[0-9]{6,}\/[0-9\/]{3,})\b",
+        r"\b(\d{4}\/[A-Za-z]\/\d{7,12}\/\d{2}\/\d{3})\b",
     ]
+
+
     raw_policy = _first_match(policy_patterns, t, flags=re.IGNORECASE)
     if raw_policy:
         cleaned = _clean_policy(raw_policy)
@@ -417,7 +466,6 @@ async def extract_text(doc_id: str):
 
             if record:
                 verification_info["database_info"] = {
-                    "categoryType": record.get("categoryType"),
                     "vehicle_number": record.get("vehicle_number"),
                     "rcBook_chassis_no": record.get("rcBook_chassis_no"),
                     "engine_no": record.get("engine_no"),
@@ -431,18 +479,25 @@ async def extract_text(doc_id: str):
                 }
 
                 extracted_info = {
-                    "categoryType": safe_get(scan_results, "rcbook", "extractedData", "vehicle_class"),
                     "vehicle_number": vehicle_number,
                     "rcBook_chassis_no": safe_get(scan_results, "rcbook", "extractedData", "chassis_no"),
                     "engine_no": safe_get(scan_results, "rcbook", "extractedData", "engine_no"),
                     "policy_number": safe_get(scan_results, "insurance", "extractedData", "policy_number"),
                     "puc_certificate_no": safe_get(scan_results, "puc", "extractedData", "certificate_no"),
+                    "puc_validity": safe_get(scan_results, "puc", "extractedData", "valid_upto"),
                     "aadhar_number": safe_get(scan_results, "aadhaar", "extractedData", "aadhar_number"),
                     "owner_name": safe_get(scan_results, "aadhaar", "extractedData", "name"),
                     "rcbook_validity": safe_get(scan_results, "rcbook", "extractedData", "reg_validity"),
                     "insurance_validity": safe_get(scan_results, "insurance", "extractedData", "insurance_validity_date"),
-                    "puc_validity": safe_get(scan_results, "puc", "extractedData", "valid_upto"),
                 }
+
+# ----------------------------------------------
+#   🔥 Override PUC fields when EV vehicle
+# ----------------------------------------------
+                puc_file_url = safe_get(scan_results, "puc", "fileUrl")
+                if puc_file_url and puc_file_url.strip().lower() == "user has ev vehicle":
+                    extracted_info["puc_certificate_no"] = "User has EV vehicle"
+                    extracted_info["puc_validity"] = "User has EV vehicle"
 
                 comparison = {}
                 for key, db_value in verification_info["database_info"].items():

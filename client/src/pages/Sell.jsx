@@ -1635,7 +1635,7 @@ function Photo3DOptions() {
           onChange={handleChange}
           required
         />{" "}
-        {renderCommonFields()}
+       
         <h4>Upload up to 20 Photos</h4> <Photo3DOptions />{renderPhotoGrid()}
         {renderLocation(formData)}
         <button type="submit" className="submit-btn">
@@ -1949,6 +1949,8 @@ function Photo3DOptions() {
                 <option value="Tata">Tata</option>{" "}
                 <option value="Honda">Honda</option>{" "}
                 <option value="Mahindra">Mahindra</option>{" "}
+                 <option value="other">Other</option>{" "}
+
               </select>{" "}
               <label>Model *</label>{" "}
               <input

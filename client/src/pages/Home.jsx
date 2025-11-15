@@ -1,9 +1,12 @@
+import { logEvent } from "../utils/logEvent";
 import React, { useState, useEffect } from "react";
 import Hero from "../Component/Hero";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useLocation } from "react-router-dom";
+
+
 
 import { FaHeart, FaShoppingCart, FaEye } from "react-icons/fa";
 import {
@@ -38,6 +41,25 @@ export function Home() {
   // CART + WISHLIST STATES
 const [cartItems, setCartItems] = useState([]);
 const [wishlistItems, setWishlistItems] = useState([]);
+
+useEffect(() => {
+  if (!mongoId) return;
+
+  const fetchRecentlyViewed = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/events/recently-viewed/${mongoId}`
+      );
+
+      setRecentlyViewed(res.data.products || []);
+    } catch (err) {
+      console.error("❌ Error fetching recently viewed:", err);
+    }
+  };
+
+  fetchRecentlyViewed();
+}, [mongoId]);
+
 // FETCH CART ITEMS
 useEffect(() => {
   if (!mongoId) return;
@@ -81,6 +103,12 @@ const handleAddToCart = async (productId, e) => {
     });
 
     setCartItems((prev) => [...prev, productId]);
+    // 🔥 SAVE EVENT
+    await logEvent({
+      userId: mongoId,
+      productId,
+      eventType: "cart",
+    });
     alert("Added to cart!");
   } catch (err) {
     alert("Error: " + err.message);
@@ -109,6 +137,13 @@ const handleToggleWishlist = async (productId, e) => {
     setWishlistItems((prev) =>
       exists ? prev.filter((id) => id !== productId) : [...prev, productId]
     );
+    // 🔥 SAVE EVENT
+    await logEvent({
+  userId: mongoId,
+  productId,
+  eventType: "wishlist",
+});
+
 
     alert(exists ? "Removed from wishlist" : "Added to wishlist");
   } catch (err) {
@@ -211,6 +246,16 @@ const handleToggleWishlist = async (productId, e) => {
     { name: "Bikes", icon: <FaBicycle size={40} />, color: "#8b5cf6" },
     { name: "Pets", icon: <FaPaw size={40} />, color: "#ec4899" },
   ];
+  const scrollRV = (direction) => {
+  const box = document.getElementById("rvScrollBox");
+  if (!box) return;
+
+  const scrollAmount = 250; // adjust speed
+
+  if (direction === "left") box.scrollLeft -= scrollAmount;
+  else box.scrollLeft += scrollAmount;
+};
+
 
   return (
     <div>
@@ -237,6 +282,39 @@ const handleToggleWishlist = async (productId, e) => {
           ))}
         </div>
       </section>
+      {mongoId && recentlyViewed.length > 0 && (
+  <section className="recently-viewed-card">
+    <div className="rv-header">
+      <h2>Recently Viewed</h2>
+
+      <div className="rv-arrows">
+        <button className="rv-arrow" onClick={() => scrollRV("left")}>‹</button>
+        <button className="rv-arrow" onClick={() => scrollRV("right")}>›</button>
+      </div>
+    </div>
+
+    <div className="rv-container" id="rvScrollBox">
+      {recentlyViewed.map((p) => (
+        <div
+          key={p._id}
+          className="rv-item"
+          onClick={() => navigate(`/product/${p._id}`)}
+        >
+          <img
+            src={
+              p.thumbnail ||
+              p.photos?.[0]?.url ||
+              "/placeholder.png"
+            }
+            alt={p.title}
+            onError={(e) => (e.target.src = "/placeholder.png")}
+          />
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
 
       {/* Recently Viewed Section */}
       {/* <section className="featured-products">
@@ -335,10 +413,18 @@ const handleToggleWishlist = async (productId, e) => {
   {/* VIEW */}
   <button
     className="icon-btn-static"
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/product/${product._id}`);
-    }}
+    onClick={async (e) => {
+  e.stopPropagation();
+
+  await logEvent({
+    userId: mongoId,
+    productId: product._id,
+    eventType: "view",
+  });
+
+  navigate(`/product/${product._id}`);
+}}
+
   >
     <FaEye />
   </button>

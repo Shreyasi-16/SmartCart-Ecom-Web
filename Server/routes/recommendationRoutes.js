@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const fetch = require("node-fetch"); // keep this or use global fetch in Node 18+
+const fetch = require("node-fetch");
 const UserRecommendations = require("../models/UserRecommendations");
 
-// Helper: remove heavy fields (like embeddings) before sending to browser / saving
+// Remove heavy fields (embedding)
 function sanitizeProducts(products, { removeEmbedding = true } = {}) {
   if (!Array.isArray(products)) return [];
   return products.map((p) => {
@@ -13,7 +13,7 @@ function sanitizeProducts(products, { removeEmbedding = true } = {}) {
   });
 }
 
-// GET /api/recommendations?userId=<mongoId>
+// GET /api/recommendations
 router.get("/", async (req, res) => {
   try {
     const { userId } = req.query;
@@ -23,86 +23,95 @@ router.get("/", async (req, res) => {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    // Step 1: Try cached recommendations
+    // 1) Check cached recommendations
     const cached = await UserRecommendations.findOne({ userId }).lean();
-    if (cached && Array.isArray(cached.recommendations) && cached.recommendations.length > 0) {
-      console.log(`🟢 Returning cached recommendations for user ${userId}`);
-      // send sanitized (no embeddings)
+    if (cached?.recommendations?.length > 0) {
+      console.log(`🟢 Cache hit for user ${userId}`);
       return res.json({
         source: "cache",
-        recommendations: sanitizeProducts(cached.recommendations, { removeEmbedding: true }),
+        recommendations: sanitizeProducts(cached.recommendations),
         count: cached.recommendations.length,
       });
     }
 
-    // Step 2: Fetch fresh recommendations from Flask (force IPv4)
+    // 2) Fetch from Flask
     console.log(`🔁 Fetching from Flask for user ${userId}`);
 
-    // fetch timeout using AbortController
     const controller = new AbortController();
-    const timeoutMs = 10000; // 10s
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-    const flaskUrl = `http://127.0.0.1:5001/recommend?user_id=${encodeURIComponent(userId)}&n=${encodeURIComponent(n)}`;
+    const flaskUrl = `http://127.0.0.1:5001/recommend?user_id=${encodeURIComponent(
+      userId
+    )}&n=${encodeURIComponent(n)}`;
 
     let flaskRes;
     try {
       flaskRes = await fetch(flaskUrl, { signal: controller.signal });
     } catch (err) {
       if (err.name === "AbortError") {
-        console.error("⏱️ Fetch to Flask timed out");
-        return res.status(504).json({ error: "upstream_timeout", message: "Flask did not respond in time" });
+        console.error("⏱️ Flask timeout");
+        return res
+          .status(504)
+          .json({ error: "upstream_timeout", message: "Flask timeout" });
       }
-      console.error("❌ Error contacting Flask:", err);
-      return res.status(502).json({ error: "upstream_error", message: err.message });
+      console.error("❌ Flask connection error:", err.message);
+      return res
+        .status(502)
+        .json({ error: "upstream_error", message: err.message });
     } finally {
       clearTimeout(timeout);
     }
 
-    // Check HTTP status
     const rawText = await flaskRes.text().catch(() => null);
+
     if (!flaskRes.ok) {
-      console.error("⚠️ Flask returned non-OK:", flaskRes.status, rawText);
-      return res.status(502).json({ error: "upstream_error", status: flaskRes.status, body: rawText });
+      return res.status(502).json({
+        error: "upstream_error",
+        status: flaskRes.status,
+        body: rawText,
+      });
     }
 
     let recData;
     try {
       recData = rawText ? JSON.parse(rawText) : {};
     } catch (err) {
-      console.error("❌ Failed to parse Flask JSON:", err, "raw:", rawText);
-      return res.status(502).json({ error: "invalid_upstream_json", message: err.message });
+      console.error("❌ JSON parse error:", err.message);
+      return res
+        .status(502)
+        .json({ error: "invalid_json", message: err.message });
     }
 
-    const recs = Array.isArray(recData.recommendations) ? recData.recommendations : [];
+    const recs = Array.isArray(recData.recommendations)
+      ? recData.recommendations
+      : [];
 
-    // Step 3: Save sanitized recommendations in DB (strip embeddings to save space)
+    // 3) Save sanitized recommendations in DB
     if (recs.length > 0) {
-      const sanitized = sanitizeProducts(recs, { removeEmbedding: true });
       try {
+        const sanitized = sanitizeProducts(recs);
         await UserRecommendations.findOneAndUpdate(
           { userId },
           { $set: { recommendations: sanitized, updatedAt: new Date() } },
-          { upsert: true, new: true }
+          { upsert: true }
         );
-        console.log(`✅ Saved ${sanitized.length} recommendations to MongoDB for user ${userId}`);
+        console.log(`💾 Saved ${sanitized.length} recs for user ${userId}`);
       } catch (err) {
-        console.error("⚠️ Failed to save recommendations to Mongo:", err);
-        // Non-fatal: we still return the recommendations to the client
+        console.error("⚠️ Mongo save error:", err.message);
       }
-    } else {
-      console.log("⚠️ No recommendations returned from Flask");
     }
 
-    // Step 4: Return sanitized payload to frontend
+    // 4) Return to frontend
     return res.json({
       source: "flask",
-      recommendations: sanitizeProducts(recs, { removeEmbedding: true }),
+      recommendations: sanitizeProducts(recs),
       count: recData.count || recs.length,
     });
   } catch (err) {
-    console.error("❌ Recommendation fetch error (route):", err);
-    return res.status(500).json({ error: "internal_error", message: err.message });
+    console.error("❌ Route error:", err.message);
+    return res
+      .status(500)
+      .json({ error: "internal_error", message: err.message });
   }
 });
 

@@ -135,6 +135,28 @@ exec(`python "${annBuildPath}"`, (error, stdout, stderr) => {
   console.log(`✅ ANN index built successfully:\n${stdout}`);
 });
 
+// 🔹 Train HYBRID (Events + Images + Location) recommender automatically
+const recommenderTrainPath = path.join(
+  process.cwd(),   // ALWAYS points to root (SmartCart/Server)
+  "python_service",
+  "train_hybrid_recommender.py"
+);
+
+console.log("🔍 Training script expected at:", recommenderTrainPath);
+console.log("📁 Exists:", require("fs").existsSync(recommenderTrainPath));
+
+console.log("⚡ Training Hybrid Recommender...");
+exec(`python "${recommenderTrainPath}"`, (error, stdout, stderr) => {
+  if (error) {
+    console.error(`❌ Recommender training error: ${error.message}`);
+    return;
+  }
+  if (stderr) {
+    console.error(`⚠️ Recommender training stderr: ${stderr}`);
+  }
+  console.log(`✅ Hybrid Recommender Trained:\n${stdout}`);
+});
+
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () =>
       console.log(`🚀 Server running at http://localhost:${PORT}`)
@@ -145,4 +167,4 @@ exec(`python "${annBuildPath}"`, (error, stdout, stderr) => {
   }
 }
 
-startServer();
+startServer();  

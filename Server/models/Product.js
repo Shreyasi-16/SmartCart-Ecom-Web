@@ -45,7 +45,7 @@ const productSchema = new mongoose.Schema({
     
       verificationStatus: {
         type: String,
-        enum: ["Pending", "Verified", "Suspect","Document Uploaded"],
+        enum: ["pending", "verified", "Document Uploaded", "suspect"],
         default: "Pending", // default status
       },
   
