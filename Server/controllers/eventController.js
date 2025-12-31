@@ -46,7 +46,7 @@ exports.logEvent = async ({
     };
   }
 
-  console.log("🟦 [logEvent] FINAL EVENT DATA:", eventData);
+  
 
   // 1️⃣ SAVE EVENT
   let savedEvent;
@@ -70,7 +70,7 @@ exports.logEvent = async ({
       top_n: 28,
     });
 
-    console.log("📨 [logEvent] Flask response:", flaskRes.data);
+    
 
     if (flaskRes.data?.recommendations) {
       await UserRecommendations.findOneAndUpdate(

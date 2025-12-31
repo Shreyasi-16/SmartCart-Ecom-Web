@@ -4,7 +4,7 @@ import { FaTrash } from "react-icons/fa";
 import { FiShoppingBag } from "react-icons/fi";
 import "./Cart.css";
 import { logEvent } from "../utils/logEvent";
-
+import { useNavigate } from "react-router-dom";
 const Cart = () => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [mongoId, setMongoId] = useState(null);
@@ -12,6 +12,8 @@ const Cart = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const auth = getAuth();
@@ -74,11 +76,15 @@ const Cart = () => {
     }
   };
 
-  const handleBuyNow = async(productId) => {
-    alert(`Buying product: ${productId}`);
-    // ✅ Log event: user initiated purchase
-    await logEvent({ userId: mongoId, productId, eventType: "purchase" });
-  };
+  
+
+  const handleBuyNow = async (productId) => {
+  // ✅ Log purchase intent
+  await logEvent({ userId: mongoId, productId, eventType: "purchase" });
+
+  // ✅ Redirect to product page
+  navigate(`/product/${productId}`);
+};
 
   
   if (loading) return <p className="loading-text">Loading cart...</p>;
@@ -120,11 +126,12 @@ const Cart = () => {
       </div>
 
       <button
-        className="btn buy-btn"
-        onClick={() => handleBuyNow(item.productId?._id)}
-      >
-        Buy Now
-      </button>
+  className="btn buy-btn"
+  onClick={() => handleBuyNow(item.productId?._id)}
+>
+  Buy Now
+</button>
+
 
       <button
         className="btn remove-btn"

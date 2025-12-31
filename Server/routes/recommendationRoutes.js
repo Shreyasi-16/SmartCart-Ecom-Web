@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
     // 1) Check cached recommendations
     const cached = await UserRecommendations.findOne({ userId }).lean();
     if (cached?.recommendations?.length > 0) {
-      console.log(`🟢 Cache hit for user ${userId}`);
+     
       return res.json({
         source: "cache",
         recommendations: sanitizeProducts(cached.recommendations),

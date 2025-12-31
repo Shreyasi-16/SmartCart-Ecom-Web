@@ -26,7 +26,7 @@ router.post("/log", async (req, res) => {
       return res.status(400).json({ error: "userId & eventType required" });
     }
 
-    console.log("➡ Calling logEvent() controller with:", req.body);
+    
 
 const event = await logEvent(req.body);
 
@@ -36,7 +36,7 @@ console.log("📌 logEvent() returned:", event);
     if (!event) {
       console.log("❌ ERROR → logEvent() returned NULL / UNDEFINED");
     } else {
-      console.log("✅ Event saved in MongoDB:", event._id);
+      // console.log("✅ Event saved in MongoDB:", event._id);
     }
 
     // 🧠 Fetch updated recommendations from Flask
@@ -46,7 +46,7 @@ console.log("📌 logEvent() returned:", event);
     let flaskRes;
     try {
       flaskRes = await fetch(flaskURL);
-      console.log("📥 Flask RAW RESPONSE:", flaskRes.status, flaskRes.statusText);
+      // console.log("📥 Flask RAW RESPONSE:", flaskRes.status, flaskRes.statusText);
     } catch (flaskErr) {
       console.error("🚨 Flask Fetch FAILED:", flaskErr.message);
       return res.status(500).json({
@@ -58,7 +58,7 @@ console.log("📌 logEvent() returned:", event);
     let recData;
     try {
       recData = await flaskRes.json();
-      console.log("📦 Flask JSON:", recData);
+      
     } catch (jsonErr) {
       console.error("⚠ Flask JSON Parse FAILED");
       recData = { recommendations: [] };
